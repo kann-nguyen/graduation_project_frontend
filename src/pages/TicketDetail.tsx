@@ -60,7 +60,7 @@ function RightColumn({ ticket }: { ticket: Ticket }) {
         <Typography variant="h6">Assigner</Typography>
         <AccountCircle sx={{ fontSize: 16, mr: 1 }} />
         <Typography variant="body1" display="inline">
-          {ticket.assigner.name}
+          {ticket.assigner ? ticket.assigner.name : "Unassigned"}
         </Typography>
       </Box>
       <Divider variant="middle" />
@@ -69,7 +69,7 @@ function RightColumn({ ticket }: { ticket: Ticket }) {
         <Box>
           <AccountCircle sx={{ fontSize: 16, mr: 1 }} />
           <Typography variant="body1" display="inline">
-            {ticket.assignee.name}
+            {ticket.assignee ? ticket.assignee.name : "Unassigned"}
           </Typography>
         </Box>
       </Box>
@@ -111,7 +111,7 @@ function History({ ticketId }: { ticketId: string }) {
   );
 }
 function MainContent({ ticket }: { ticket: Ticket }) {
-  const cveIds = ticket.targetedVulnerability.map((v) => v.cveId);
+  const cveIds = ticket.targetedThreat.cveId;
   const resolutionQuery = useGetResolutionQuery(cveIds);
   const resolution = resolutionQuery.data?.data;
   return (

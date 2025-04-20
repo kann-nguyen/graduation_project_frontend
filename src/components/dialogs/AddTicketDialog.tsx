@@ -154,7 +154,6 @@ export default function AddTicketDialog({ open, setOpen }: Props) {
             <Controller
               control={control}
               name="assignee"
-              rules={{ required: "Assignee is required" }}
               render={({ field }) => (
                 <FormControl>
                   <InputLabel>Assignee</InputLabel>

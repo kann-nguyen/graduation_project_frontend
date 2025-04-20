@@ -4,12 +4,11 @@ import { Ticket, TicketCreate } from ".";
 
 export async function getTickets(projectName: string): PromiseServer<Ticket[]> {
   const response = await api.get("/ticket", {
-    params: {
-      projectName,
-    },
+    params: { projectName },
   });
   return response.data;
 }
+
 export async function createTicket(ticket: TicketCreate): PromiseServer<null> {
   const response = await api.post("/ticket", {
     data: ticket,
@@ -29,5 +28,10 @@ export async function markTicket(
       status,
     },
   });
+  return response.data;
+}
+
+export async function updateTicketState({ id, status }: { id: string; status: string }) {
+  const response = await api.patch(`/api/ticket/${id}/state`, { data: { status } });
   return response.data;
 }

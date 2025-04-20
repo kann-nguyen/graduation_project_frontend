@@ -1,40 +1,15 @@
 import { Close, Done } from "@mui/icons-material";
 import { Chip, useTheme } from "@mui/material";
 
-export default function TicketStatusChip({
-  status,
-}: {
-  status: "open" | "closed";
-}) {
-  const theme = useTheme();
-  const getSxProps = (status: "open" | "closed") => {
-    if (status === "open") {
-      return {
-        backgroundColor: theme.palette.success.main,
-        color: theme.palette.success.contrastText,
-      };
-    }
-    return {
-      backgroundColor: theme.palette.primary.main,
-      color: theme.palette.primary.contrastText,
-    };
+export default function TicketStatusChip({ status }: { status: string }) {
+  const statusMap: Record<string, { label: string; color: "default" | "primary" | "secondary" | "success" | "warning" | "error" }> = {
+    "Not accepted": { label: "Not Accepted", color: "default" },
+    Processing: { label: "Processing", color: "warning" },
+    Submitted: { label: "Submitted", color: "primary" },
+    Resolved: { label: "Resolved", color: "success" },
   };
 
-  const getStatusLabel = () => {
-    if (status === "open") {
-      return "Open";
-    }
-    return "Closed";
-  };
+  const { label, color } = statusMap[status] || { label: "Unknown", color: "default" };
 
-  const getIcon = () => {
-    if (status === "open") {
-      return <Done />;
-    }
-    return <Close color="secondary" />;
-  };
-
-  return (
-    <Chip label={getStatusLabel()} icon={getIcon()} sx={getSxProps(status)} />
-  );
+  return <Chip label={label} color={color} />;
 }

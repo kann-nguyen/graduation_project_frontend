@@ -3,13 +3,14 @@ import { User } from "../user";
 
 export interface Ticket {
   _id: string;
-  status: "open" | "closed";
   title: string;
   description: string;
   priority: "low" | "medium" | "high";
-  assignee: User;
-  assigner: User;
-  targetedVulnerability: Vulnerability[];
+  status: "Not accepted" | "Processing" | "Submitted" | "Resolved";
+  assignee: User | null; // Ensure this matches the backend
+  assigner: User | null;
+  artifactId: string; // Added if present in the backend
+  targetedThreat: string; // Added if present in the backend
   projectName: string;
   createdAt: string;
   updatedAt: string;
