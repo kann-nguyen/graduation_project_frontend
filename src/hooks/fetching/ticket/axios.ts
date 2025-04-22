@@ -32,6 +32,6 @@ export async function markTicket(
 }
 
 export async function updateTicketState({ id, status }: { id: string; status: string }) {
-  const response = await api.patch(`/api/ticket/${id}/state`, { data: { status } });
+  const response = await api.patch(`/ticket/${id}/state`, { data: { status } });
   return response.data;
 }

@@ -1,6 +1,5 @@
 import { AccountCircle, BugReport } from "@mui/icons-material";
 import {
-  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -22,30 +21,62 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { ChangeEvent, HTMLAttributes, SyntheticEvent, useState } from "react";
+import { ChangeEvent, HTMLAttributes, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
-import { Vulnerability } from "~/hooks/fetching/artifact";
-import { useArtifactsQuery } from "~/hooks/fetching/artifact/query";
+import { Threat } from "~/hooks/fetching/threat";
 import { TicketCreate } from "~/hooks/fetching/ticket";
 import { useCreateTicketMutation } from "~/hooks/fetching/ticket/query";
 import { useGetMembersOfProjectQuery } from "~/hooks/fetching/project/query";
 import { useAccountContext } from "~/hooks/general";
+import { useThreatsQuery } from "~/hooks/fetching/threat/query";
+
 interface Props {
   open: boolean;
   setOpen: (open: boolean) => void;
 }
+
+function ThreatOption({
+  props,
+  option,
+}: {
+  props: HTMLAttributes<HTMLLIElement>;
+  option: Threat;
+}) {
+  return (
+    <ListItem {...props} key={option._id}>
+      <ListItemIcon>
+        <BugReport />
+      </ListItemIcon>
+      <ListItemText
+        primary={<Typography variant="body1">{option.name}</Typography>}
+        secondary={
+          <>
+            <Typography variant="body2">
+              <b>Description:</b> {option.description}
+            </Typography>
+            <Typography variant="body2">
+              <b>Score:</b> {option.score.total}
+            </Typography>
+            <Typography variant="body2">
+              <b>Type:</b> {option.type}
+            </Typography>
+          </>
+        }
+      />
+    </ListItem>
+  );
+}
+
 export default function AddTicketDialog({ open, setOpen }: Props) {
-  const [recommendedPriority, setRecommendedPriority] = useState("");
   const { currentProject } = useParams();
-  const getAllArtifactsQuery = useArtifactsQuery(currentProject);
-  const artifacts = getAllArtifactsQuery.data?.data;
-  const vulns =
-    artifacts?.flatMap((artifact) => artifact.vulnerabilityList) ?? [];
   const memberInfoQuery = useGetMembersOfProjectQuery(currentProject);
   const createTicketMutation = useCreateTicketMutation();
   const memberInfo = memberInfoQuery.data?.data ?? [];
   const accountInfo = useAccountContext();
+  const threatsQuery = useThreatsQuery();
+  const threats = threatsQuery.data?.data ?? [];
+
   const {
     register,
     handleSubmit,
@@ -53,35 +84,18 @@ export default function AddTicketDialog({ open, setOpen }: Props) {
     control,
     setValue,
   } = useForm<TicketCreate>();
-  const [selectedPriority, setSelectedPriority] = useState<
-    "Low" | "Medium" | "High"
-  >("Low");
+
+  const [selectedPriority, setSelectedPriority] = useState<"Low" | "Medium" | "High">("Low");
+
   function selectPriority(event: ChangeEvent<HTMLInputElement>) {
     setSelectedPriority(
       (event.target as HTMLInputElement).value as "Low" | "Medium" | "High"
     );
   }
-  function captureVulnsSeverity(
-    event: SyntheticEvent<Element, Event>,
-    data: Vulnerability[],
-    onChange: (...event: any[]) => void
-  ) {
-    const severities = data.map((vuln) => vuln.severity.toLowerCase());
-    if (severities.includes("high") || severities.includes("critical")) {
-      setValue("priority", "high");
-    } else if (severities.includes("medium")) {
-      setValue("priority", "medium");
-    } else {
-      setValue("priority", "low");
-    }
-    onChange(data);
-  }
+
   async function submit(data: TicketCreate) {
     if (!accountInfo || !currentProject) return;
-    const priority = selectedPriority.toLowerCase() as
-      | "low"
-      | "medium"
-      | "high";
+    const priority = selectedPriority.toLowerCase() as "low" | "medium" | "high";
     const ticket = {
       ...data,
       priority,
@@ -90,17 +104,14 @@ export default function AddTicketDialog({ open, setOpen }: Props) {
     createTicketMutation.mutate(ticket);
     setOpen(false);
   }
+
   return (
     <Dialog open={open} onClose={() => setOpen(false)} fullWidth>
       <Box component="form" onSubmit={handleSubmit(submit)}>
         <DialogTitle>Create a new ticket</DialogTitle>
         <DialogContent>
           <Stack spacing={2}>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-            >
+            <Box display="flex" justifyContent="space-between" alignItems="center">
               <Typography variant="body1">Title</Typography>
               <TextField
                 {...register("title", {
@@ -122,11 +133,7 @@ export default function AddTicketDialog({ open, setOpen }: Props) {
               error={!!errors.description}
               helperText={errors.description?.message}
             />
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-            >
+            <Box display="flex" justifyContent="space-between" alignItems="center">
               <Typography variant="body1">Priority</Typography>
               <Controller
                 name="priority"
@@ -152,8 +159,8 @@ export default function AddTicketDialog({ open, setOpen }: Props) {
               disabled
             />
             <Controller
-              control={control}
               name="assignee"
+              control={control}
               render={({ field }) => (
                 <FormControl>
                   <InputLabel>Assignee</InputLabel>
@@ -177,30 +184,39 @@ export default function AddTicketDialog({ open, setOpen }: Props) {
             )}
             <Controller
               control={control}
-              name="targetedVulnerability"
-              rules={{ required: "Select at least one vulnerability" }}
+              name="targetedThreat"
+              rules={{ required: "Select a threat" }}
               render={({ field: { onChange, value } }) => (
-                <Autocomplete
-                  multiple
-                  options={vulns}
-                  onChange={(event, data) =>
-                    captureVulnsSeverity(event, data, onChange)
-                  }
-                  renderOption={(props, option) => (
-                    <VulnOption props={props} option={option} />
+                <FormControl>
+                  <InputLabel>Threat</InputLabel>
+                  <Select 
+                    value={value || ''} 
+                    onChange={onChange}
+                    label="Threat"
+                    error={!!errors.targetedThreat}
+                  >
+                    {threats.map((threat) => (
+                      <MenuItem key={threat._id} value={threat._id}>
+                        <ListItem>
+                          <ListItemIcon>
+                            <BugReport />
+                          </ListItemIcon>
+                          <ListItemText 
+                            primary={threat.name}
+                            secondary={`Type: ${threat.type} | Score: ${threat.score.total}`}
+                          />
+                        </ListItem>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.targetedThreat && (
+                    <FormHelperText error>
+                      {errors.targetedThreat.message}
+                    </FormHelperText>
                   )}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Vulnerability" />
-                  )}
-                  getOptionLabel={(option) => option.cveId}
-                />
+                </FormControl>
               )}
             />
-            {errors.targetedVulnerability && (
-              <FormHelperText error>
-                {errors.targetedVulnerability.message}
-              </FormHelperText>
-            )}
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -211,36 +227,5 @@ export default function AddTicketDialog({ open, setOpen }: Props) {
         </DialogActions>
       </Box>
     </Dialog>
-  );
-}
-function VulnOption({
-  props,
-  option,
-}: {
-  props: HTMLAttributes<HTMLLIElement>;
-  option: Vulnerability;
-}) {
-  return (
-    <ListItem {...props} key={option._id}>
-      <ListItemIcon>
-        <BugReport />
-      </ListItemIcon>
-      <ListItemText
-        primary={<Typography variant="body1">{option.cveId}</Typography>}
-        secondary={
-          <>
-            <Typography variant="body2">
-              <b>Description:</b> {option.description}
-            </Typography>
-            <Typography variant="body2">
-              <b>Score:</b> {option.score}
-            </Typography>
-            <Typography variant="body2">
-              <b>Severity:</b> {option.severity}
-            </Typography>
-          </>
-        }
-      />
-    </ListItem>
   );
 }

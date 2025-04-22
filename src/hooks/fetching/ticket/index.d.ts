@@ -15,11 +15,12 @@ export interface Ticket {
   createdAt: string;
   updatedAt: string;
 }
+
 export interface TicketCreate {
   title: string;
   description: string;
   priority: "low" | "medium" | "high";
   assignee: string;
-  targetedVulnerability: Vulnerability[];
+  targetedThreat: string;
   projectName: string;
 }
