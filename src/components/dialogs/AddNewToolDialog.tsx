@@ -12,13 +12,19 @@ import {
 import { langs } from "@uiw/codemirror-extensions-langs";
 import ReactCodeMirror from "@uiw/react-codemirror";
 import { useSnackbar } from "notistack";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import {
-  useCreateNewScannerMutation,
-  useSampleCode,
-} from "~/hooks/fetching/scanner/query";
+import { useCreateNewScannerMutation, useSampleCode } from "~/hooks/fetching/scanner/query";
 import Instruction from "../text/Instruction";
+
+interface FormData {
+  name: string;
+  config: {
+    installCommand: string;
+    code: string;
+  }
+}
+
 export default function AddNewToolDialog({
   open,
   setOpen,
@@ -31,31 +37,33 @@ export default function AddNewToolDialog({
     handleSubmit,
     register,
     formState: { errors },
-    reset,
-  } = useForm<CreateOrUpdateNewScanner>();
+  } = useForm<FormData>();
+
   const createNewScannerMutation = useCreateNewScannerMutation();
   const [isSuccess, setIsSuccess] = useState(false);
   const [dockerfile, setDockerfile] = useState("");
   const { enqueueSnackbar } = useSnackbar();
-  async function onSubmit(data: CreateOrUpdateNewScanner) {
+
+  const sampleCodeQuery = useSampleCode();
+  const sampleCode = sampleCodeQuery.data?.data;
+
+  async function onSubmit(data: FormData) {
     createNewScannerMutation.mutate(data, {
       onSuccess: (response) => {
         if (response.status === "success") {
           setIsSuccess(true);
           setDockerfile(response.data);
+          enqueueSnackbar("Scanner created successfully!", { variant: "success" });
         }
       },
     });
   }
-  const sampleCodeQuery = useSampleCode();
-  const sampleCode = sampleCodeQuery.data?.data;
+
   if (isSuccess) {
-    navigator.clipboard.writeText(dockerfile);
-    enqueueSnackbar("Dockerfile copied to clipboard!", { variant: "success" });
     return (
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="lg">
         <DialogTitle>Generated Dockerfile</DialogTitle>
-        <Stack spacing={2}>
+        <Stack spacing={2} sx={{ p: 2 }}>
           <Typography align="center">
             Use the Dockerfile below to spin up your own scanner instance
           </Typography>
@@ -68,12 +76,13 @@ export default function AddNewToolDialog({
         </Stack>
         <DialogActions>
           <Button onClick={() => setOpen(false)} color="inherit">
-            Cancel
+            Close
           </Button>
         </DialogActions>
       </Dialog>
     );
   }
+
   return (
     <Dialog open={open} onClose={() => setOpen(false)} maxWidth="lg" fullWidth>
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -94,10 +103,7 @@ export default function AddNewToolDialog({
                 required: "Install command is required",
               })}
               error={!!errors.config?.installCommand}
-              helperText={
-                errors.config?.installCommand?.message &&
-                "This command will be used to install the tool in a Docker container"
-              }
+              helperText={errors.config?.installCommand?.message}
             />
             <Instruction />
           </Stack>

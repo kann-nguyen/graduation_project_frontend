@@ -1,5 +1,5 @@
-import { Code } from "@mui/icons-material";
-import { Card, CardContent, CardHeader, SxProps, Tooltip } from "@mui/material";
+import { Add, Code } from "@mui/icons-material";
+import { Button, Card, CardContent, CardHeader, SxProps, Tooltip } from "@mui/material";
 import {
   DataGrid,
   GridActionsCellItem,
@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useGetScanners } from "~/hooks/fetching/scanner/query";
 import EditScannerDialog from "../dialogs/EditScannerDialog";
 import { useSearchParams } from "react-router-dom";
+import AddNewToolDialog from "../dialogs/AddNewToolDialog";
 
 export default function ScanningToolManagementCard({ sx }: { sx?: SxProps }) {
   function handleViewCode(id: GridRowId) {
@@ -53,12 +54,23 @@ export default function ScanningToolManagementCard({ sx }: { sx?: SxProps }) {
     },
   ];
   const [, setSearchParams] = useSearchParams();
+  const [openAdd, setOpenAdd] = useState(false);
   const [open, setOpen] = useState(false);
   const scanningToolsQuery = useGetScanners();
   const scanners = scanningToolsQuery.data?.data ?? [];
   return (
     <Card sx={sx}>
-      <CardHeader title="Scanning tool" />
+      <CardHeader 
+        title="Scanning tool" 
+        action={
+          <Button
+            startIcon={<Add />}
+            onClick={() => setOpenAdd(true)}
+          >
+            Add new scanner
+          </Button>
+        }
+      />
       <CardContent>
         <DataGrid
           columns={columns}
@@ -67,6 +79,7 @@ export default function ScanningToolManagementCard({ sx }: { sx?: SxProps }) {
         />
       </CardContent>
       <EditScannerDialog open={open} setOpen={setOpen} />
+      <AddNewToolDialog open={openAdd} setOpen={setOpenAdd} />
     </Card>
   );
 }
