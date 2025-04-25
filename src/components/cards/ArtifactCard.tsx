@@ -5,6 +5,7 @@ import {
   GridView,
   Info,
   LibraryBooks,
+  PendingOutlined,
 } from "@mui/icons-material";
 import {
   Box,
@@ -12,17 +13,18 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CircularProgress,
   Divider,
   IconButton,
   List,
   ListItem,
-  ListItemButton,
   ListItemIcon,
   ListItemSecondaryAction,
   ListItemText,
   Stack,
   Tab,
   Tabs,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useState } from "react";
@@ -215,13 +217,23 @@ export default function ArtifactCard({
                 justifyContent="space-between"
               >
                 <Box display="flex" justifyContent="center" alignItems="center">
-                  <Stack alignItems="center">
+                  <Stack alignItems="center" spacing={1}>
                     <Typography variant="h6" component="div">
                       {artifact.name}
                     </Typography>
                     <Typography color="text.secondary">
                       {renderType(artifact)}
                     </Typography>
+                    {artifact.isScanning && (
+                      <Tooltip title="Scanning in progress">
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <CircularProgress size={16} />
+                          <Typography variant="caption" color="text.secondary">
+                            Scanning...
+                          </Typography>
+                        </Stack>
+                      </Tooltip>
+                    )}
                   </Stack>
                 </Box>
                 <Divider orientation="vertical" sx={{ mx: 2 }} />

@@ -18,6 +18,7 @@ export interface Artifact {
   threatList: Threat[];
   vulnerabilityList: Vulnerability[];
   cpe?: string;
+  isScanning?: boolean;
 }
 
 export interface ArtifactCreate {

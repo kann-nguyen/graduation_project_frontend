@@ -138,7 +138,7 @@ function TicketTable({ tickets }: { tickets: Ticket[] }) {
                   size="small"
                   startIcon={<InfoOutlined />}
                   component={RouterLink}
-                  to={`/projects/${currentProject}/tickets/${ticket._id}`}
+                  to={`/${currentProject}/tickets/${ticket._id}`}
                 >
                   Details
                 </Button>
@@ -160,10 +160,7 @@ function TicketTable({ tickets }: { tickets: Ticket[] }) {
   );
 }
 
-export default function ExtendedTicketTable() {
-  const { currentProject } = useParams();
-  const ticketQuery = useTicketsQuery(currentProject);
-  const tickets = ticketQuery.data?.data ?? [];
+export default function ExtendedTicketTable({ tickets }: TabProps) {
   const [displayTickets, setDisplayTickets] = useState(tickets);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({

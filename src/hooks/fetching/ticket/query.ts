@@ -20,8 +20,11 @@ export function useCreateTicketMutation() {
     },
   });
 }
-export function useTicketQuery(id: string) {
-  return useQuery(["ticket", id], () => getTicket(id));
+export function useTicketQuery(id: string, options?: { refetchInterval?: number }) {
+  return useQuery(["ticket", id], () => getTicket(id), {
+    ...options,
+    enabled: !!id
+  });
 }
 export function useMarkTicketMutation() {
   interface MarkTicketParams {

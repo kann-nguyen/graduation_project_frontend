@@ -86,32 +86,47 @@ function RightColumn({ ticket }: { ticket: Ticket }) {
 function History({ ticketId }: { ticketId: string }) {
   const query = useChangeHistoryQuery(ticketId);
   const history = query.data?.data ?? [];
-  const lastFive = history.slice(-5);
+  // Sort history by timestamp in descending order (newest first)
+  const sortedHistory = [...history].sort((a, b) => 
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+
   return (
-    <Timeline
-      sx={{
-        [`& .${timelineOppositeContentClasses.root}`]: {
-          flex: 0.2,
-        },
-      }}
-    >
-      {lastFive.map((h, index) => (
-        <TimelineItem>
-          <TimelineOppositeContent color="textSecondary">
-            {dayjs().to(dayjs(h.timestamp))}
-          </TimelineOppositeContent>
-          <TimelineSeparator>
-            <TimelineDot color="primary" />
-            {index !== lastFive.length - 1 && <TimelineConnector />}
-          </TimelineSeparator>
-          <TimelineContent>{h.description}</TimelineContent>
-        </TimelineItem>
-      ))}
-    </Timeline>
+    <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
+      <Timeline
+        sx={{
+          [`& .${timelineOppositeContentClasses.root}`]: {
+            flex: 0.2,
+          },
+          [`& .${timelineItemClasses.root}:before`]: {
+            flex: 0,
+            padding: 0,
+          },
+        }}
+      >
+        {sortedHistory.map((h, index) => (
+          <TimelineItem key={h._id}>
+            <TimelineOppositeContent color="text.secondary">
+              {dayjs().to(dayjs(h.timestamp))}
+            </TimelineOppositeContent>
+            <TimelineSeparator>
+              <TimelineDot color="primary" />
+              {index !== sortedHistory.length - 1 && <TimelineConnector />}
+            </TimelineSeparator>
+            <TimelineContent>
+              <Typography>{h.description}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {dayjs(h.timestamp).format('MMMM D, YYYY [at] HH:mm')}
+              </Typography>
+            </TimelineContent>
+          </TimelineItem>
+        ))}
+      </Timeline>
+    </Box>
   );
 }
 function MainContent({ ticket }: { ticket: Ticket }) {
-  const cveIds = ticket.targetedThreat.cveId;
+  const cveIds = [ticket.targetedThreat];
   const resolutionQuery = useGetResolutionQuery(cveIds);
   const resolution = resolutionQuery.data?.data;
   return (
@@ -124,20 +139,42 @@ function MainContent({ ticket }: { ticket: Ticket }) {
       </Box>
       <Box>
         <Typography variant="h5">
-          <b>Description</b>
+          <b>Details</b>
         </Typography>
-        <Typography variant="body1">{ticket.description}</Typography>
+        <Stack spacing={2}>
+          <Box>
+            <Typography variant="subtitle1" color="text.secondary">Created</Typography>
+            <Typography>{dayjs(ticket.createdAt).format('MMMM D, YYYY [at] HH:mm')}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" color="text.secondary">Last Updated</Typography>
+            <Typography>{dayjs(ticket.updatedAt).format('MMMM D, YYYY [at] HH:mm')}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" color="text.secondary">Description</Typography>
+            <Typography variant="body1">{ticket.description}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" color="text.secondary">Project</Typography>
+            <Typography>{ticket.projectName}</Typography>
+          </Box>
+        </Stack>
       </Box>
       <Box>
         <Typography variant="h5">
-          <b>Vulnerabilities</b>
+          <b>Associated Threat</b>
         </Typography>
-        {ticket.targetedVulnerability.map((v) => (
-          <VulnDetailsCard
-            vuln={v}
-            resolution={resolution?.find((x) => x.cveId === v.cveId)}
-          />
-        ))}
+        {Array.isArray(ticket.targetedThreat) ? (
+          ticket.targetedThreat.map((v) => (
+            <VulnDetailsCard
+              key={v._id}
+              vuln={v}
+              resolution={resolution?.find((x) => x.cveId === v.cveId)}
+            />
+          ))
+        ) : (
+          <Typography color="text.secondary">No threats associated with this ticket</Typography>
+        )}
       </Box>
     </Stack>
   );
@@ -146,20 +183,28 @@ function MainContent({ ticket }: { ticket: Ticket }) {
 export default function TicketDetail() {
   const { ticketId } = useParams();
   const ticketMutation = useMarkTicketMutation();
+
+  // Add refetch interval to auto-update ticket data
+  const ticketQuery = useTicketQuery(ticketId || '', {
+    refetchInterval: 5000, // Refetch every 5 seconds while component is mounted
+  });
+
   function closeTicket() {
     if (ticketId) {
       ticketMutation.mutate({ id: ticketId, status: "closed" });
     }
   }
+  
   function reopenTicket() {
     if (ticketId) {
       ticketMutation.mutate({ id: ticketId, status: "open" });
     }
   }
+
   if (!ticketId) return <></>;
-  const ticketQuery = useTicketQuery(ticketId);
   const ticket = ticketQuery.data?.data;
   if (!ticket) return <></>;
+
   return (
     <Box flexGrow={1} height="100vh">
       <Toolbar />
@@ -172,22 +217,24 @@ export default function TicketDetail() {
             alignItems="flex-end"
           >
             <Headline ticket={ticket} />
-            {ticket.status === "open" ? (
+            {ticket.status === "Processing" && (
               <Button
                 variant="contained"
                 startIcon={<CheckCircleOutline />}
                 onClick={closeTicket}
                 color="success"
               >
-                Close ticket
+                Submit ticket
               </Button>
-            ) : (
+            )}
+            {ticket.status === "Not accepted" && (
               <Button
                 variant="contained"
                 startIcon={<RefreshOutlined />}
                 onClick={reopenTicket}
+                color="primary"
               >
-                Reopen ticket
+                Process ticket
               </Button>
             )}
           </Stack>
