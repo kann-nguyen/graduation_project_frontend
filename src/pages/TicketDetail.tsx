@@ -2,6 +2,7 @@ import {
   AccountCircle,
   CheckCircleOutline,
   RefreshOutlined,
+  AssignmentInd,
 } from "@mui/icons-material";
 import {
   Timeline,
@@ -32,11 +33,10 @@ import PriorityChip from "~/components/styled-components/PriorityChip";
 import TicketStatusChip from "~/components/styled-components/TicketStatusChip";
 import { useChangeHistoryQuery } from "~/hooks/fetching/change-history/query";
 import { Ticket } from "~/hooks/fetching/ticket";
-import {
-  useMarkTicketMutation,
-  useTicketQuery,
-} from "~/hooks/fetching/ticket/query";
-import { useGetResolutionQuery } from "~/hooks/fetching/vuln/query";
+import { useMarkTicketMutation, useTicketQuery } from "~/hooks/fetching/ticket/query";
+import { updateTicketState } from "~/hooks/fetching/ticket/axios";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 dayjs.extend(relativeTime);
 function Headline({ ticket }: { ticket: Ticket }) {
   const relativeTime = dayjs().to(dayjs(ticket.updatedAt));
@@ -125,10 +125,133 @@ function History({ ticketId }: { ticketId: string }) {
     </Box>
   );
 }
+export default function TicketDetail() {
+  const { ticketId } = useParams();
+  const queryClient = useQueryClient();
+
+  const ticketMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await updateTicketState({id, status});
+      return response;
+    },
+    onSuccess: async () => {
+      if (ticketId) {
+        // Invalidate specific ticket
+        queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+        // Invalidate change history
+        queryClient.invalidateQueries({ queryKey: ['changeHistory'] });
+        // Force refetch tickets for both member and manager views
+        await queryClient.invalidateQueries({ 
+          queryKey: ['tickets'],
+          refetchType: 'all'
+        });
+      }
+    },
+    onError: (error) => {
+      console.error("❌ Failed to update ticket status:", error);
+    },
+  });
+
+  // Increase refetch interval to make updates more responsive
+  const ticketQuery = useTicketQuery(ticketId || '', {
+    refetchInterval: 2000 // Refetch every 2 seconds
+  });
+
+  const handleStatusUpdate = async () => {
+    if (!ticketId) return;
+
+    let newStatus;
+    switch(ticket?.status) {
+      case "Not accepted":
+        newStatus = "Processing";
+        break;
+      case "Processing": 
+        newStatus = "Submitted";
+        break;
+      default:
+        return;
+    }
+
+    if (newStatus) {
+      try {
+        await ticketMutation.mutateAsync({ id: ticketId, status: newStatus });
+      } catch (error) {
+        console.error('Failed to update ticket:', error);
+      }
+    }
+  };
+
+  if (!ticketId) return <></>;
+  const ticket = ticketQuery.data?.data;
+  if (!ticket) return <></>;
+
+  const getActionButton = () => {
+    switch (ticket.status) {
+      case "Not accepted":
+        return (
+          <Button
+            variant="contained"
+            startIcon={<AssignmentInd />}
+            onClick={handleStatusUpdate}
+            color="primary"
+          >
+            Assign
+          </Button>
+        );
+      case "Processing":
+        return (
+          <Button
+            variant="contained"
+            startIcon={<CheckCircleOutline />}
+            onClick={handleStatusUpdate}
+            color="success"
+          >
+            Submit
+          </Button>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Box flexGrow={1} height="100vh">
+      <Toolbar />
+      <Container sx={{ my: 4 }} maxWidth="xl">
+        <Stack spacing={2} sx={{ m: 2 }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            spacing={4}
+            alignItems="flex-end"
+          >
+            <Headline ticket={ticket} />
+            {getActionButton()}
+          </Stack>
+          <Divider />
+          <Grid container spacing={2}>
+            <Grid item xs={9}>
+              <MainContent ticket={ticket} />
+            </Grid>
+            <Grid item xs={3}>
+              <RightColumn ticket={ticket} />
+            </Grid>
+          </Grid>
+        </Stack>
+      </Container>
+    </Box>
+  );
+}
+
 function MainContent({ ticket }: { ticket: Ticket }) {
   const cveIds = [ticket.targetedThreat];
-  const resolutionQuery = useGetResolutionQuery(cveIds);
-  const resolution = resolutionQuery.data?.data;
+
+  
+  interface Resolution {
+    cveId: string;
+    // Add other properties as needed
+  }
+
   return (
     <Stack spacing={5}>
       <Box>
@@ -164,91 +287,7 @@ function MainContent({ ticket }: { ticket: Ticket }) {
         <Typography variant="h5">
           <b>Associated Threat</b>
         </Typography>
-        {Array.isArray(ticket.targetedThreat) ? (
-          ticket.targetedThreat.map((v) => (
-            <VulnDetailsCard
-              key={v._id}
-              vuln={v}
-              resolution={resolution?.find((x) => x.cveId === v.cveId)}
-            />
-          ))
-        ) : (
-          <Typography color="text.secondary">No threats associated with this ticket</Typography>
-        )}
       </Box>
     </Stack>
-  );
-}
-
-export default function TicketDetail() {
-  const { ticketId } = useParams();
-  const ticketMutation = useMarkTicketMutation();
-
-  // Add refetch interval to auto-update ticket data
-  const ticketQuery = useTicketQuery(ticketId || '', {
-    refetchInterval: 5000, // Refetch every 5 seconds while component is mounted
-  });
-
-  function closeTicket() {
-    if (ticketId) {
-      ticketMutation.mutate({ id: ticketId, status: "closed" });
-    }
-  }
-  
-  function reopenTicket() {
-    if (ticketId) {
-      ticketMutation.mutate({ id: ticketId, status: "open" });
-    }
-  }
-
-  if (!ticketId) return <></>;
-  const ticket = ticketQuery.data?.data;
-  if (!ticket) return <></>;
-
-  return (
-    <Box flexGrow={1} height="100vh">
-      <Toolbar />
-      <Container sx={{ my: 4 }} maxWidth="xl">
-        <Stack spacing={2} sx={{ m: 2 }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            spacing={4}
-            alignItems="flex-end"
-          >
-            <Headline ticket={ticket} />
-            {ticket.status === "Processing" && (
-              <Button
-                variant="contained"
-                startIcon={<CheckCircleOutline />}
-                onClick={closeTicket}
-                color="success"
-              >
-                Submit ticket
-              </Button>
-            )}
-            {ticket.status === "Not accepted" && (
-              <Button
-                variant="contained"
-                startIcon={<RefreshOutlined />}
-                onClick={reopenTicket}
-                color="primary"
-              >
-                Process ticket
-              </Button>
-            )}
-          </Stack>
-          <Divider />
-          <Grid container spacing={2}>
-            <Grid item xs={9}>
-              <MainContent ticket={ticket} />
-            </Grid>
-            <Grid item xs={3}>
-              <RightColumn ticket={ticket} />
-            </Grid>
-          </Grid>
-        </Stack>
-      </Container>
-    </Box>
   );
 }

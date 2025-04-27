@@ -5,7 +5,16 @@ import { TicketCreate } from ".";
 import { toast } from "~/utils/toast";
 
 export function useTicketsQuery(projectName: string) {
-  return useQuery(["tickets", projectName], () => getTickets(projectName));
+  return useQuery(
+    ["tickets", projectName], 
+    () => getTickets(projectName),
+    {
+      // Always fetch fresh data when component mounts
+      staleTime: 0,
+      cacheTime: 0,
+      refetchOnMount: "always"
+    }
+  );
 }
 export function useCreateTicketMutation() {
   const queryClient = useQueryClient();
@@ -36,9 +45,16 @@ export function useMarkTicketMutation() {
   return useMutation({
     mutationFn: ({ id, status }: MarkTicketParams) => markTicket(id, status),
     onSuccess: (response, { id }) => {
-      toast(response, enqueueSnackbar, () => {
-        queryClient.invalidateQueries(["ticket", id]);
-        queryClient.invalidateQueries(["changeHistory"]);
+      toast(response, enqueueSnackbar, async () => {
+        // Invalidate the specific ticket
+        queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+        // Invalidate change history
+        queryClient.invalidateQueries({ queryKey: ['changeHistory'] });
+        // Force refetch all tickets to update both member and manager views
+        await queryClient.invalidateQueries({ 
+          queryKey: ['tickets'],
+          refetchType: 'all'
+        });
       });
     },
   });

@@ -19,6 +19,7 @@ import {
   IErrorResponse,
   ISuccessResponse,
 } from "~/hooks/fetching/response-type";
+import { getAccountInfo } from "~/hooks/fetching/account/axios";
 import { updateAccountContext } from "~/hooks/general";
 import { createComponents } from "~/theme/create-components";
 import { createPalette } from "~/theme/create-palette";
@@ -196,9 +197,22 @@ export default function App() {
       },
     }),
   });
+
+  // Initialize auth state from session
   useEffect(() => {
-    updateAccountContext();
+    const initAuth = async () => {
+      try {
+        const { data } = await getAccountInfo();
+        if (data) {
+          await updateAccountContext();
+        }
+      } catch (error) {
+        console.error('Failed to initialize auth state:', error);
+      }
+    };
+    initAuth();
   }, []);
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <QueryClientProvider client={queryClient}>

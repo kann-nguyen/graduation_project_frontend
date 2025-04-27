@@ -12,16 +12,16 @@ const withAlphas = (color: any) => {
 };
 
 export const neutral = {
-  50: "#F8F9FA",
-  100: "#F3F4F6",
-  200: "#E5E7EB",
-  300: "#D2D6DB",
-  400: "#9DA4AE",
-  500: "#6C737F",
-  600: "#4D5761",
-  700: "#2F3746",
-  800: "#1C2536",
-  900: "#111927",
+  50: "#F9FAFB",
+  100: "#F2F4F7",
+  200: "#E4E7EC",
+  300: "#D0D5DD",
+  400: "#98A2B3",
+  500: "#667085",
+  600: "#475467",
+  700: "#344054",
+  800: "#1D2939",
+  900: "#101828",
 };
 
 export const indigo = withAlphas({
@@ -30,25 +30,34 @@ export const indigo = withAlphas({
   main: "#6366F1",
   dark: "#4338CA",
   darkest: "#312E81",
-  contrastText: "#FFFFFF",
+  contrastText: "#FFFFFF"
+});
+
+export const primary = withAlphas({
+  lightest: "#F5F7FF",
+  light: "#EBEEFE",
+  main: "#4F46E5",
+  dark: "#3730A3",
+  darkest: "#312E81",
+  contrastText: "#FFFFFF"
 });
 
 export const success = withAlphas({
-  lightest: "#F0FDF9",
-  light: "#3FC79A",
-  main: "#10B981",
-  dark: "#0B815A",
-  darkest: "#134E48",
-  contrastText: "#FFFFFF",
+  lightest: "#ECFDF3",
+  light: "#D1FADF", 
+  main: "#12B76A",
+  dark: "#027A48",
+  darkest: "#054F31",
+  contrastText: "#FFFFFF"
 });
 
 export const info = withAlphas({
-  lightest: "#ECFDFF",
-  light: "#CFF9FE",
-  main: "#06AED4",
-  dark: "#0E7090",
-  darkest: "#164C63",
-  contrastText: "#FFFFFF",
+  lightest: "#F5FAFF",
+  light: "#D1E9FF",
+  main: "#2E90FA",
+  dark: "#1849A9",
+  darkest: "#194185",
+  contrastText: "#FFFFFF"
 });
 
 export const warning = withAlphas({
@@ -57,7 +66,7 @@ export const warning = withAlphas({
   main: "#F79009",
   dark: "#B54708",
   darkest: "#7A2E0E",
-  contrastText: "#FFFFFF",
+  contrastText: "#FFFFFF"
 });
 
 export const error = withAlphas({
@@ -66,5 +75,5 @@ export const error = withAlphas({
   main: "#F04438",
   dark: "#B42318",
   darkest: "#7A271A",
-  contrastText: "#FFFFFF",
+  contrastText: "#FFFFFF"
 });
