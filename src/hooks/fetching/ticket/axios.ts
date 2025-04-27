@@ -1,6 +1,6 @@
 import api from "~/api";
 import { PromiseServer } from "~/hooks/fetching/response-type";
-import { Ticket, TicketCreate } from ".";
+import { Ticket, TicketCreate, TicketUpdate } from ".";
 
 export async function getTickets(projectName: string): PromiseServer<Ticket[]> {
   const response = await api.get("/ticket", {
@@ -33,5 +33,12 @@ export async function markTicket(
 
 export async function updateTicketState({ id, status }: { id: string; status: string }) {
   const response = await api.patch(`/ticket/${id}/state`, { data: { status } });
+  return response.data;
+}
+
+export async function updateTicket(id: string, data: TicketUpdate): PromiseServer<null> {
+  const response = await api.patch(`/ticket/${id}`, {
+    data,
+  });
   return response.data;
 }

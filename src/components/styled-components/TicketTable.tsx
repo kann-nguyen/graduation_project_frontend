@@ -106,7 +106,7 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
   );
 
   return (
-    <Card>
+    <Card sx={{ width: '100%', overflowX: 'hidden' }}> {/* Ensure the table fits the screen width */}
       <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           Ticket List
@@ -120,13 +120,13 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
           Add Ticket
         </Button>
       </Box>
-      <Table>
+      <Table sx={{ tableLayout: 'fixed', width: '100%' }}> {/* Use fixed table layout */}
         <TableHead>
           <TableRow>
             <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
             <TableCell align="center" sx={{ fontWeight: 600 }}>Priority</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Assignee</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Assigner</TableCell>
+            <TableCell align="center" sx={{ fontWeight: 600 }}>Assignee</TableCell>
+            <TableCell align="center" sx={{ fontWeight: 600 }}>Assigner</TableCell>
             <TableCell align="center" sx={{ fontWeight: 600 }}>Status</TableCell>
           </TableRow>
         </TableHead>
@@ -178,8 +178,8 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
                 <TableCell align="center">
                   <PriorityChip priority={ticket.priority} />
                 </TableCell>
-                <TableCell>{ticket.assignee?.name || "Unassigned"}</TableCell>
-                <TableCell>{ticket.assigner?.name || "Unknown"}</TableCell>
+                <TableCell align="center">{ticket.assignee?.name || "Unassigned"}</TableCell>
+                <TableCell align="center">{ticket.assigner?.name || "Unknown"}</TableCell>
                 <TableCell
                   align="center"
                   onClick={(e) => {

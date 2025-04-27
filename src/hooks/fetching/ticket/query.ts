@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createTicket, getTicket, getTickets, markTicket } from "./axios";
+import { createTicket, getTicket, getTickets, markTicket, updateTicket } from "./axios";
 import { useSnackbar } from "notistack";
-import { TicketCreate } from ".";
+import { TicketCreate, TicketUpdate } from ".";
 import { toast } from "~/utils/toast";
 
 export function useTicketsQuery(projectName: string) {
@@ -44,6 +44,31 @@ export function useMarkTicketMutation() {
   const { enqueueSnackbar } = useSnackbar();
   return useMutation({
     mutationFn: ({ id, status }: MarkTicketParams) => markTicket(id, status),
+    onSuccess: (response, { id }) => {
+      toast(response, enqueueSnackbar, async () => {
+        // Invalidate the specific ticket
+        queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+        // Invalidate change history
+        queryClient.invalidateQueries({ queryKey: ['changeHistory'] });
+        // Force refetch all tickets to update both member and manager views
+        await queryClient.invalidateQueries({ 
+          queryKey: ['tickets'],
+          refetchType: 'all'
+        });
+      });
+    },
+  });
+}
+
+export function useUpdateTicketMutation() {
+  interface UpdateTicketParams {
+    id: string;
+    data: TicketUpdate;
+  }
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+  return useMutation({
+    mutationFn: ({ id, data }: UpdateTicketParams) => updateTicket(id, data),
     onSuccess: (response, { id }) => {
       toast(response, enqueueSnackbar, async () => {
         // Invalidate the specific ticket

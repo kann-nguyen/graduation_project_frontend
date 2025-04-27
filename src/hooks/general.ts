@@ -4,12 +4,12 @@ import { getAccountInfo } from "./fetching/account/axios";
 
 export const usePermissionHook = () => {
   const accountInfo = useAccountContext();
-  return accountInfo.permission;
+  return accountInfo?.permission || []; // Return empty array if permission is undefined
 };
 
 export const useUserRole = () => {
   const accountInfo = useAccountContext();
-  return accountInfo.role;
+  return accountInfo?.role;
 };
 
 interface LoginStore {

@@ -28,10 +28,15 @@ export default function Ticket() {
         m: 0,
         height: '100%',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflow: 'hidden',
+        justifyContent: 'center',
+        px: 2,
       }}
     >
-      <ExtendedTicketTable tickets={tickets} />
+      <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}> {/* Allow horizontal scrolling if content overflows */}
+        <ExtendedTicketTable tickets={tickets} />
+      </Box>
     </Box>
   );
 }

@@ -24,3 +24,9 @@ export interface TicketCreate {
   targetedThreat: string;
   projectName: string;
 }
+
+export interface TicketUpdate {
+  title?: string;
+  description?: string;
+  assignee?: string;
+}
