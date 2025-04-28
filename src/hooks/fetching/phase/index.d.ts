@@ -1,10 +1,12 @@
 import { Artifact } from "../artifact";
+import { Scanner } from "../scanner";
 
 export interface Phase {
   _id: string;
   name: string;
   tasks: Task[];
   artifacts: Artifact[];
+  scanners?: Scanner[];
   description?: string;
   createdAt?: string;
   updatedAt?: string;

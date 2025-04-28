@@ -84,3 +84,27 @@ export async function createPhaseTemplate(
   });
   return response.data;
 }
+
+// Add scanner to phase
+export async function addScannerToPhase(
+  phaseId: string,
+  scannerId: string
+): PromiseServer<null> {
+  const response = await api.post(`/phase/scanner/add`, {
+    phaseId,
+    scannerId,
+  });
+  return response.data;
+}
+
+// Remove scanner from phase
+export async function removeScannerFromPhase(
+  phaseId: string,
+  scannerId: string
+): PromiseServer<null> {
+  const response = await api.post(`/phase/scanner/remove`, {
+    phaseId,
+    scannerId,
+  });
+  return response.data;
+}

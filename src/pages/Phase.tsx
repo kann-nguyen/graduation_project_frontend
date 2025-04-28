@@ -25,9 +25,9 @@ export default function Phase() {
   const { phaseList } = project;
   if (phaseList.length === 0) return <CreatePhaseTemplate />;
   return (
-    <Box sx={{ flexGrow: 1, height: "100vh" }}>
+    <Box sx={{ flexGrow: 1 }}>
       <Toolbar />
-      <Container sx={{ my: 4 }} maxWidth="xl">
+      <Container sx={{ my: 4, pb: 4 }} maxWidth="xl">
         <Stack spacing={4}>
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography variant="h4">Phases</Typography>
@@ -36,15 +36,15 @@ export default function Phase() {
             </Button>
             <ManageTemplateDialog open={open} setOpen={setOpen} />
           </Box>
-          <Grid container spacing={2}>
+          <Grid container spacing={3}>
             <Grid item xs={12}>
               <PhaseBoard phases={phaseList} />
             </Grid>
-            <Grid item xs={5}>
-              <PhaseTasksChart phases={phaseList} />
+            <Grid item xs={12} md={5}>
+              <PhaseTasksChart phases={phaseList} sx={{ minHeight: 400 }} />
             </Grid>
-            <Grid item xs={7}>
-              <PhaseProgressChart phases={phaseList} />
+            <Grid item xs={12} md={7}>
+              <PhaseProgressChart phases={phaseList} sx={{ minHeight: 400 }} />
             </Grid>
           </Grid>
         </Stack>

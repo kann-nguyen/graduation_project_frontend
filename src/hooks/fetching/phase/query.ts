@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addArtifactToPhase,
+  addScannerToPhase,
   addTaskToPhase,
   createPhaseTemplate,
   createPhasesFromTemplate,
@@ -9,6 +10,7 @@ import {
   getPhaseTemplateById,
   getPhaseTemplates,
   removeArtifactFromPhase,
+  removeScannerFromPhase,
   removeTaskFromPhase,
   updatePhaseTemplate,
 } from "./axios";
@@ -146,6 +148,44 @@ export function useCreatePhaseTemplateMutation() {
     onSuccess: (response) => {
       toast(response, enqueueSnackbar, () => {
         queryClient.invalidateQueries(["phaseTemplate"]);
+      });
+    },
+  });
+}
+
+// Add scanner to phase mutation
+export function useAddScannerToPhaseMutation() {
+  interface AddScannerToPhaseParams {
+    phaseId: string;
+    scannerId: string;
+  }
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+  return useMutation({
+    mutationFn: ({ phaseId, scannerId }: AddScannerToPhaseParams) =>
+      addScannerToPhase(phaseId, scannerId),
+    onSuccess: (response, { phaseId }) => {
+      toast(response, enqueueSnackbar, () => {
+        queryClient.invalidateQueries(["phase", phaseId]);
+      });
+    },
+  });
+}
+
+// Remove scanner from phase mutation
+export function useRemoveScannerFromPhaseMutation() {
+  interface RemoveScannerFromPhaseParams {
+    phaseId: string;
+    scannerId: string;
+  }
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+  return useMutation({
+    mutationFn: ({ phaseId, scannerId }: RemoveScannerFromPhaseParams) =>
+      removeScannerFromPhase(phaseId, scannerId),
+    onSuccess: (response, { phaseId }) => {
+      toast(response, enqueueSnackbar, () => {
+        queryClient.invalidateQueries(["phase", phaseId]);
       });
     },
   });

@@ -9,10 +9,13 @@ interface CreateOrUpdateNewScanner {
     code: string;
   };
 }
-interface Scanner {
+export interface Scanner {
+  id: string;
   _id: string;
   name: string;
   createdBy: string;
+  endpoint?: string;
+  createdAt?: string;
   config?: {
     installCommand: string;
     code: string;

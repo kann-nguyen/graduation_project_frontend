@@ -44,6 +44,7 @@ const SignUpPage = lazy(() => import("./SignUp"));
 const TicketDetailPage = lazy(() => import("./TicketDetail"));
 const TicketPage = lazy(() => import("./Ticket"));
 const VulnerabilityPage = lazy(() => import("./Vulnerability"));
+const ArtifactDetailPage = lazy(() => import("./ArtifactDetail"));
 function GlobalSuspense({ element }: { element: JSX.Element }) {
   return <Suspense fallback={<FullScreenLoading />}>{element}</Suspense>;
 }
@@ -101,6 +102,10 @@ const managerAndMemberRoutes: RouteObject = {
     {
       path: "scripts",
       element: <GlobalSuspense element={<Script />} />,
+    },
+    {
+      path: "artifact/:artifactId",
+      element: <GlobalSuspense element={<ArtifactDetailPage />} />,
     },
   ],
 };
