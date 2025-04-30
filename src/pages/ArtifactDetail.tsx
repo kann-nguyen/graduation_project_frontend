@@ -14,6 +14,8 @@ import {
   Search,
   Visibility,
   FilterList,
+  PieChart as PieChartIcon,
+  Assessment,
 } from "@mui/icons-material";
 import {
   Box,
@@ -55,13 +57,33 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { useParams, useNavigate } from "react-router-dom";
 import { useArtifactQuery } from "~/hooks/fetching/artifact/query";
 import { useThreatQuery } from "~/hooks/fetching/threat/query";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useContext, createContext } from "react";
 import { Artifact, Vulnerability } from "~/hooks/fetching/artifact";
 import UpdateArtifactDialog from "~/components/dialogs/UpdateArtifactDialog";
 import { useSearchParams } from "react-router-dom";
 import { typeOptions } from "~/utils/threat-display";
+import { getThreat } from "~/hooks/fetching/threat/axios";
+import { Threat } from "~/hooks/fetching/threat";
+import { Legend, Pie, PieChart, ResponsiveContainer, Cell } from "recharts";
+import SeverityStatistics from "~/components/charts/SeverityStatisticsChart";
+import ThreatStatistics from "~/components/charts/ThreatStatisticsChart";
 
 dayjs.extend(relativeTime);
+
+// Create a context to share cached threat and vulnerability data between components
+interface ArtifactDataContextType {
+  cachedThreats: Threat[];
+  setCachedThreats: React.Dispatch<React.SetStateAction<Threat[]>>;
+  isLoadingThreats: boolean;
+  setIsLoadingThreats: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const ArtifactDataContext = createContext<ArtifactDataContextType>({
+  cachedThreats: [],
+  setCachedThreats: () => {},
+  isLoadingThreats: true,
+  setIsLoadingThreats: () => {},
+});
 
 function PageHeader({ artifact }: { artifact: Artifact }) {
   const navigate = useNavigate();
@@ -158,6 +180,7 @@ function PageHeader({ artifact }: { artifact: Artifact }) {
 
 function VulnerabilitiesSummary({ vulnerabilities }: { vulnerabilities: Vulnerability[] }) {
   const theme = useTheme();
+  const [viewVulnDialogOpen, setViewVulnDialogOpen] = useState(false);
   
   const getVulnerabilitySeverityCounts = () => {
     const counts = { critical: 0, high: 0, medium: 0, low: 0, negligible: 0 };
@@ -173,6 +196,20 @@ function VulnerabilitiesSummary({ vulnerabilities }: { vulnerabilities: Vulnerab
   const counts = getVulnerabilitySeverityCounts();
   const total = vulnerabilities.length;
   
+  // Data for the pie chart
+  const pieChartData = [
+    { name: "Critical", value: counts.critical, fill: theme.palette.error.dark },
+    { name: "High", value: counts.high, fill: theme.palette.error.main },
+    { name: "Medium", value: counts.medium, fill: theme.palette.warning.main },
+    { name: "Low", value: counts.low, fill: theme.palette.success.main },
+    { name: "Negligible", value: counts.negligible, fill: theme.palette.grey[400] }
+  ].filter(item => item.value > 0);
+  
+  const renderLabel = ({ percent }: { percent: number }) => {
+    if (percent < 0.05) return null;
+    return `${(percent * 100).toFixed(0)}%`;
+  };
+  
   if (vulnerabilities.length === 0) {
     return (
       <Paper 
@@ -185,176 +222,167 @@ function VulnerabilitiesSummary({ vulnerabilities }: { vulnerabilities: Vulnerab
           textAlign: 'center'
         }}
       >
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
+        <Typography variant="h5" fontWeight="bold" gutterBottom>
           Vulnerabilities Summary
         </Typography>
         <Box sx={{ py: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <VerifiedUser sx={{ fontSize: 48, color: theme.palette.success.main, mb: 2 }} />
-          <Typography>No vulnerabilities detected</Typography>
+          <VerifiedUser sx={{ fontSize: 64, color: theme.palette.success.main, mb: 2 }} />
+          <Typography variant="h6">No vulnerabilities detected</Typography>
         </Box>
       </Paper>
     );
   }
   
   return (
-    <Paper 
-      elevation={0} 
-      sx={{ 
-        p: 3, 
-        mb: 3,
-        border: `1px solid ${theme.palette.divider}`,
-        borderRadius: 2,
-      }}
-    >
-      <Typography variant="h6" fontWeight="bold" gutterBottom>
-        Vulnerabilities Summary
-      </Typography>
-      
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} sm={3}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 2, 
-              bgcolor: alpha(theme.palette.error.main, 0.1),
-              borderLeft: `4px solid ${theme.palette.error.main}`,
-              borderRadius: 1,
-              height: '100%'
-            }}
-          >
-            <Typography variant="subtitle2" color="text.secondary">
-              Critical
-            </Typography>
-            <Typography variant="h4" fontWeight="bold" color="error">
-              {counts.critical}
-            </Typography>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={6} sm={3}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 2, 
-              bgcolor: alpha(theme.palette.warning.main, 0.1),
-              borderLeft: `4px solid ${theme.palette.warning.main}`,
-              borderRadius: 1,
-              height: '100%'
-            }}
-          >
-            <Typography variant="subtitle2" color="text.secondary">
-              High
-            </Typography>
-            <Typography variant="h4" fontWeight="bold" color="warning.main">
-              {counts.high}
-            </Typography>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={6} sm={3}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 2, 
-              bgcolor: alpha(theme.palette.info.main, 0.1),
-              borderLeft: `4px solid ${theme.palette.info.main}`,
-              borderRadius: 1,
-              height: '100%'
-            }}
-          >
-            <Typography variant="subtitle2" color="text.secondary">
-              Medium
-            </Typography>
-            <Typography variant="h4" fontWeight="bold" color="info.main">
-              {counts.medium}
-            </Typography>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={6} sm={3}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 2, 
-              bgcolor: alpha(theme.palette.success.main, 0.1),
-              borderLeft: `4px solid ${theme.palette.success.main}`,
-              borderRadius: 1,
-              height: '100%'
-            }}
-          >
-            <Typography variant="subtitle2" color="text.secondary">
-              Low
-            </Typography>
-            <Typography variant="h4" fontWeight="bold" color="success.main">
-              {counts.low}
-            </Typography>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={6} sm={3}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 2, 
-              bgcolor: alpha(theme.palette.grey[400], 0.1),
-              borderLeft: `4px solid ${theme.palette.grey[400]}`,
-              borderRadius: 1,
-              height: '100%'
-            }}
-          >
-            <Typography variant="subtitle2" color="text.secondary">
-              Negligible
-            </Typography>
-            <Typography variant="h4" fontWeight="bold" sx={{ color: theme.palette.grey[400] }}>
-              {counts.negligible}
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
-      
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="subtitle2" gutterBottom>
-          Overall Risk Assessment
+    <>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          mb: 3,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h5" fontWeight="bold" gutterBottom>
+          Vulnerabilities Summary
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <Box sx={{ width: '100%', mr: 1 }}>
-            <LinearProgress 
-              variant="determinate" 
-              value={100} 
-              sx={{ 
-                height: 10, 
-                borderRadius: 5,
-                background: `linear-gradient(to right, ${theme.palette.success.main} 0%, ${theme.palette.info.main} 25%, ${theme.palette.warning.main} 60%, ${theme.palette.error.main} 100%)`,
-                '& .MuiLinearProgress-bar': {
-                  display: 'none'
-                }
-              }}
-            />
-          </Box>
-        </Box>
         
-        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-          <Typography variant="body1" sx={{ mr: 1 }}>
-            Total Vulnerabilities:
-          </Typography>
-          <Chip 
-            label={total} 
-            color={
-              counts.critical > 0 ? 'error' : 
-              counts.high > 0 ? 'warning' : 
-              counts.medium > 0 ? 'info' : 'success'
-            } 
-            variant="filled" 
-            size="small"
-          />
-        </Box>
-      </Box>
-    </Paper>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            {/* Chart visualization - made larger */}
+            <Box sx={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              {total > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={100}
+                      paddingAngle={1}
+                      dataKey="value"
+                      label={renderLabel}
+                      labelLine={false}
+                    >
+                      {pieChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Legend wrapperStyle={{ fontSize: '16px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <VerifiedUser sx={{ fontSize: 48, color: theme.palette.success.main, mb: 1 }} />
+                  <Typography variant="h6">No vulnerabilities detected</Typography>
+                </Box>
+              )}
+            </Box>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            {/* Counts breakdown - with larger text */}
+            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 500 }}>
+                Vulnerability Breakdown:
+              </Typography>
+              
+              <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: theme.palette.error.dark, mr: 1.5 }} />
+                  <Typography variant="body1" fontSize="16px">Critical</Typography>
+                </Box>
+                <Typography variant="body1" fontWeight="bold" fontSize="16px">{counts.critical}</Typography>
+              </Box>
+              
+              <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: theme.palette.error.main, mr: 1.5 }} />
+                  <Typography variant="body1" fontSize="16px">High</Typography>
+                </Box>
+                <Typography variant="body1" fontWeight="bold" fontSize="16px">{counts.high}</Typography>
+              </Box>
+              
+              <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: theme.palette.warning.main, mr: 1.5 }} />
+                  <Typography variant="body1" fontSize="16px">Medium</Typography>
+                </Box>
+                <Typography variant="body1" fontWeight="bold" fontSize="16px">{counts.medium}</Typography>
+              </Box>
+              
+              <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: theme.palette.success.main, mr: 1.5 }} />
+                  <Typography variant="body1" fontSize="16px">Low</Typography>
+                </Box>
+                <Typography variant="body1" fontWeight="bold" fontSize="16px">{counts.low}</Typography>
+              </Box>
+              
+              <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: theme.palette.grey[400], mr: 1.5 }} />
+                  <Typography variant="body1" fontSize="16px">Negligible</Typography>
+                </Box>
+                <Typography variant="body1" fontWeight="bold" fontSize="16px">{counts.negligible}</Typography>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="h6">Total Vulnerabilities:</Typography>
+                <Typography variant="h6" fontWeight="bold">{total}</Typography>
+              </Box>
+            </Box>
+          </Grid>
+        </Grid>
+      
+        
+        {/* View All Vulnerabilities button added to this section */}
+        {vulnerabilities.length > 0 && (
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+            <Button 
+              variant="contained" 
+              startIcon={<BugReport />}
+              size="large"
+              onClick={() => setViewVulnDialogOpen(true)}
+              sx={{ px: 4, py: 1, fontSize: '16px' }}
+            >
+              View All Vulnerabilities ({vulnerabilities.length})
+            </Button>
+          </Box>
+        )}
+      </Paper>
+      
+      {/* Vulnerabilities Dialog */}
+      <Dialog 
+        open={viewVulnDialogOpen} 
+        onClose={() => setViewVulnDialogOpen(false)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">All Vulnerabilities</Typography>
+            <IconButton onClick={() => setViewVulnDialogOpen(false)}>
+              <MoreVert />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <SearchableVulnerabilitiesList vulnerabilities={vulnerabilities || []} />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
 function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[] }) {
   const theme = useTheme();
+  const { cachedThreats, setCachedThreats, isLoadingThreats, setIsLoadingThreats } = useContext(ArtifactDataContext);
+  const [viewThreatsDialogOpen, setViewThreatsDialogOpen] = useState(false);
   
   // Track counts by threat type
   const [threatTypeCounts, setThreatTypeCounts] = useState<{[key: string]: number}>({
@@ -367,16 +395,7 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
     'Unknown': 0
   });
   
-  // Track status counts for the overall badge
-  const [threatStatusCounts, setThreatStatusCounts] = useState<{[key: string]: number}>({
-    'Non mitigated': 0,
-    'Partially mitigated': 0,
-    'Fully mitigated': 0,
-    'Unknown': 0,
-  });
-  
   // Add debug state variables
-  const [isLoading, setIsLoading] = useState(true);
   const [debugInfo, setDebugInfo] = useState<{
     processedCount: number,
     successCount: number,
@@ -391,58 +410,18 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
     lastError: null
   });
 
-  // Create a custom fetch function that doesn't use hooks
-  const fetchThreatData = async (threatId: string) => {
-    try {
-      // Try multiple possible API endpoints
-      const possibleEndpoints = [
-        `/api/threats/${threatId}`,
-        `/threats/${threatId}`,
-        `/api/threat/${threatId}`,
-        `/threat/${threatId}`
-      ];
-      
-      let response;
-      let responseText = '';
-      let endpoint = '';
-      
-      for (const apiEndpoint of possibleEndpoints) {
-        try {
-          console.log(`Trying to fetch threat data from: ${apiEndpoint}`);
-          response = await fetch(apiEndpoint);
-          endpoint = apiEndpoint;
-          responseText = await response.text(); // Get text first to inspect
-          
-          if (response.ok) {
-            try {
-              // Try to parse as JSON
-              const jsonData = JSON.parse(responseText);
-              console.log(`Success with endpoint ${apiEndpoint}`);
-              return jsonData;
-            } catch (e) {
-              console.error(`Response is not valid JSON: ${responseText.substring(0, 100)}...`);
-              continue; // Try next endpoint
-            }
-          }
-        } catch (err) {
-          console.error(`Error with endpoint ${apiEndpoint}:`, err);
-        }
-      }
-      
-      // If we reach here, all endpoints failed
-      console.error(`All API endpoints failed. Last response (${endpoint}):`, responseText.substring(0, 200));
-      throw new Error(`Could not fetch threat data: ${responseText.substring(0, 100)}`);
-    } catch (error) {
-      console.error(`Error fetching threat ${threatId}:`, error);
-      throw error;
-    }
-  };
-  
   // Fetch all threat data to display in the summary
   useEffect(() => {
     const fetchThreats = async () => {
       if (!threatList?.length) {
-        setIsLoading(false);
+        setIsLoadingThreats(false);
+        return;
+      }
+      
+      // Skip fetching if we already have cached threats
+      if (cachedThreats.length > 0) {
+        processThreats(cachedThreats);
+        setIsLoadingThreats(false);
         return;
       }
       
@@ -456,13 +435,6 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
         'Unknown': 0
       };
       
-      const statusCounts = {
-        'Non mitigated': 0,
-        'Partially mitigated': 0,
-        'Fully mitigated': 0,
-        'Unknown': 0,
-      };
-      
       let processedCount = 0;
       let successCount = 0;
       let errorCount = 0;
@@ -470,6 +442,7 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
       let lastError = null;
       
       const maxThreatsToProcess = Math.min(50, threatList.length);
+      const fetchedThreats: Threat[] = [];
       
       for (let i = 0; i < maxThreatsToProcess; i++) {
         const threatItem = threatList[i];
@@ -478,8 +451,8 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
         try {
           const threatIdValue = typeof threatItem === 'string' ? threatItem : (threatItem as { _id: string })._id;
           
-          const threatData = await fetchThreatData(threatIdValue);
-          const threat = threatData.data;
+          const threatResponse = await getThreat(threatIdValue);
+          const threat = threatResponse.data;
           
           if (!threat) {
             errorCount++;
@@ -487,14 +460,14 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
           }
           
           successCount++;
+          fetchedThreats.push(threat);
           
           // Store a few samples for debug display
           if (threatSamples.length < 3) {
             threatSamples.push({
               id: threat._id,
               name: threat.name,
-              type: threat.type,
-              status: threat.status
+              type: threat.type
             });
           }
           
@@ -507,21 +480,6 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
             }
           } else {
             typeCounts['Unknown']++;
-          }
-          
-          // Also track status for the overall badge
-          if (threat.status) {
-            if (threat.status in statusCounts) {
-              if (threat.status in statusCounts) {
-                statusCounts[threat.status as keyof typeof statusCounts]++;
-              } else {
-                statusCounts['Unknown']++;
-              }
-            } else {
-              statusCounts['Unknown']++;
-            }
-          } else {
-            statusCounts['Unknown']++;
           }
           
           // Update debug info regularly
@@ -540,10 +498,12 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
         }
       }
       
+      // Cache the fetched threats for reuse
+      setCachedThreats(fetchedThreats);
+      
       // Final update of all state
       setThreatTypeCounts(typeCounts);
-      setThreatStatusCounts(statusCounts);
-      setIsLoading(false);
+      setIsLoadingThreats(false);
       setDebugInfo({
         processedCount,
         successCount,
@@ -552,10 +512,37 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
         lastError
       });
     };
+
+    const processThreats = (threats: Threat[]) => {
+      const typeCounts = {
+        'Spoofing': 0,
+        'Tampering': 0,
+        'Repudiation': 0,
+        'Information Disclosure': 0,
+        'Denial of Service': 0,
+        'Elevation of Privilege': 0,
+        'Unknown': 0
+      };
+      
+      threats.forEach(threat => {
+        // Count by type
+        if (threat.type) {
+          if (threat.type in typeCounts) {
+            typeCounts[threat.type as keyof typeof typeCounts]++;
+          } else {
+            typeCounts['Unknown']++;
+          }
+        } else {
+          typeCounts['Unknown']++;
+        }
+      });
+      
+      setThreatTypeCounts(typeCounts);
+    };
     
     fetchThreats();
-  }, [threatList]);
-  
+  }, [threatList, cachedThreats, setCachedThreats, setIsLoadingThreats]);
+
   // Get threat type icon and color
   const getThreatTypeInfo = (type: string) => {
     switch (type) {
@@ -588,12 +575,12 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
           textAlign: 'center'
         }}
       >
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
+        <Typography variant="h5" fontWeight="bold" gutterBottom>
           Threats Summary
         </Typography>
         <Box sx={{ py: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Security sx={{ fontSize: 48, color: theme.palette.grey[400], mb: 2 }} />
-          <Typography>No threats associated with this artifact</Typography>
+          <Security sx={{ fontSize: 64, color: theme.palette.grey[400], mb: 2 }} />
+          <Typography variant="h6">No threats associated with this artifact</Typography>
         </Box>
       </Paper>
     );
@@ -606,181 +593,160 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
   
   const noThreatsFound = threatTypesWithCounts.length === 0;
 
+  // Calculate total threats (from the counts, not the list length which may not be fetched yet)
+  const totalThreats = Object.values(threatTypeCounts).reduce((sum, count) => sum + count, 0);
+  
+  // Prepare data for pie chart
+  const pieChartData = Object.entries(threatTypeCounts)
+    .filter(([type, count]) => count > 0 && type !== 'Unknown')
+    .map(([type, value]) => {
+      const { color } = getThreatTypeInfo(type);
+      return { 
+        name: type, 
+        value,
+        fill: color
+      };
+    });
+  
+  const renderLabel = ({ percent }: { percent: number }) => {
+    if (percent < 0.05) return null;
+    return `${(percent * 100).toFixed(0)}%`;
+  };
+
   return (
-    <Paper 
-      elevation={0} 
-      sx={{ 
-        p: 3, 
-        mb: 3,
-        border: `1px solid ${theme.palette.divider}`,
-        borderRadius: 2,
-      }}
-    >
-      <Typography variant="h6" fontWeight="bold" gutterBottom>
-        Threats Summary {isLoading && <CircularProgress size={16} sx={{ ml: 1, verticalAlign: 'middle' }} />}
-      </Typography>
-      
-      {isLoading ? (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <CircularProgress />
-          <Typography sx={{ mt: 2 }}>
-            Loading threats data ({debugInfo.processedCount}/{threatList.length})...
-          </Typography>
-        </Box>
-      ) : noThreatsFound ? (
-        <Box>
-          {/* Debug information */}
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 2, 
-              mb: 3, 
-              bgcolor: alpha(theme.palette.warning.main, 0.1),
-              border: `1px solid ${theme.palette.warning.main}`,
-              borderRadius: 1 
-            }}
-          >
-            <Typography variant="subtitle1" fontWeight="bold" color="warning.main" gutterBottom>
-              Debug Information:
-            </Typography>
-            <Typography variant="body2">
-              - Expected Threats: {threatList.length}
-            </Typography>
-            <Typography variant="body2">
-              - Processed: {debugInfo.processedCount}
-            </Typography>
-            <Typography variant="body2">
-              - Success: {debugInfo.successCount}
-            </Typography>
-            <Typography variant="body2">
-              - Errors: {debugInfo.errorCount}
-            </Typography>
-            {debugInfo.lastError && (
-              <Typography variant="body2" color="error">
-                - Last Error: {debugInfo.lastError}
-              </Typography>
-            )}
-            {debugInfo.threatSamples.length > 0 && (
-              <>
-                <Typography variant="body2" fontWeight="medium" sx={{ mt: 1 }}>
-                  Sample threats:
-                </Typography>
-                {debugInfo.threatSamples.map((sample, idx) => (
-                  <Box key={idx} sx={{ mt: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
-                    <Typography variant="caption" display="block">
-                      ID: {sample.id}
-                    </Typography>
-                    <Typography variant="caption" display="block">
-                      Name: {sample.name}
-                    </Typography>
-                    <Typography variant="caption" display="block">
-                      Type: {sample.type || 'Not set'}
-                    </Typography>
-                    <Typography variant="caption" display="block">
-                      Status: {sample.status || 'Not set'}
-                    </Typography>
-                  </Box>
-                ))}
-              </>
-            )}
-          </Paper>
-          
-          <Box sx={{ textAlign: 'center', py: 3 }}>
-            <Security sx={{ fontSize: 48, color: theme.palette.warning.main, mb: 2 }} />
-            <Typography color="warning.main" variant="h6" gutterBottom>
-              No threat type information found
-            </Typography>
-            <Typography color="text.secondary">
-              {threatList.length} threats exist, but could not extract proper STRIDE type information from them.
+    <>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          mb: 3,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h5" fontWeight="bold" gutterBottom>
+          Threats Summary {isLoadingThreats && <CircularProgress size={16} sx={{ ml: 1, verticalAlign: 'middle' }} />}
+        </Typography>
+        
+        {isLoadingThreats ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <CircularProgress size={50} />
+            <Typography variant="h6" sx={{ mt: 2 }}>
+              Loading threats data ({debugInfo.processedCount}/{threatList.length})...
             </Typography>
           </Box>
-        </Box>
-      ) : (
-        <>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            {threatTypesWithCounts.map(([type, count]) => {
-              const { icon, color } = getThreatTypeInfo(type);
-              return (
-                <Grid item xs={6} sm={4} md={4} key={type}>
-                  <Paper 
-                    elevation={0} 
-                    sx={{ 
-                      p: 2, 
-                      bgcolor: alpha(color, 0.1),
-                      borderLeft: `4px solid ${color}`,
-                      borderRadius: 1,
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column'
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="h6" sx={{ mr: 1 }}>{icon}</Typography>
-                      <Typography variant="subtitle2" color="text.secondary" noWrap>
-                        {type}
-                      </Typography>
-                    </Box>
-                    <Typography variant="h4" fontWeight="bold" sx={{ color }}>
-                      {count}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {count === 1 ? '1 threat' : `${count} threats`}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              );
-            })}
-          </Grid>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-            <Typography variant="body1" sx={{ mr: 1 }}>
-              Total Threats:
-            </Typography>
-            <Chip 
-              label={threatList.length} 
-              color={ 
-                threatStatusCounts['Non mitigated'] > 0 ? 'error' : 
-                threatStatusCounts['Partially mitigated'] > 0 ? 'warning' : 'success'
-              } 
-              variant="filled" 
-              size="small"
-            />
-            
-            <Box sx={{ flexGrow: 1 }} />
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Status:
+        ) : noThreatsFound ? (
+          <Box>
+            <Box sx={{ textAlign: 'center', py: 3 }}>
+              <Security sx={{ fontSize: 64, color: theme.palette.warning.main, mb: 2 }} />
+              <Typography color="warning.main" variant="h6" gutterBottom>
+                No threat type information found
               </Typography>
-              {threatStatusCounts['Non mitigated'] > 0 && (
-                <Chip 
-                  size="small" 
-                  label={`${threatStatusCounts['Non mitigated']} Non mitigated`} 
-                  color="error"
-                  variant="outlined"
-                />
-              )}
-              {threatStatusCounts['Partially mitigated'] > 0 && (
-                <Chip 
-                  size="small" 
-                  label={`${threatStatusCounts['Partially mitigated']} Partially mitigated`} 
-                  color="warning"
-                  variant="outlined"
-                />
-              )}
-              {threatStatusCounts['Fully mitigated'] > 0 && (
-                <Chip 
-                  size="small" 
-                  label={`${threatStatusCounts['Fully mitigated']} Fully mitigated`} 
-                  color="success"
-                  variant="outlined"
-                />
-              )}
+              <Typography color="text.secondary" fontSize="16px">
+                {threatList.length} threats exist, but could not extract proper STRIDE type information from them.
+              </Typography>
             </Box>
           </Box>
-        </>
-      )}
-    </Paper>
+        ) : (
+          <>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                {/* Pie chart visualization - made larger */}
+                <Box sx={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={100}
+                        paddingAngle={1}
+                        dataKey="value"
+                        label={renderLabel}
+                        labelLine={false}
+                      >
+                        {pieChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Legend wrapperStyle={{ fontSize: '16px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                {/* Threats breakdown - with larger text */}
+                <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 500 }}>
+                    Threats Breakdown:
+                  </Typography>
+                  
+                  {threatTypesWithCounts.map(([type, count]) => {
+                    const { icon, color } = getThreatTypeInfo(type);
+                    return (
+                      <Box key={type} sx={{ mb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography sx={{ mr: 1.5, width: 24, fontSize: '20px' }}>{icon}</Typography>
+                          <Typography variant="body1" fontSize="16px">{type}</Typography>
+                        </Box>
+                        <Typography variant="body1" fontWeight="bold" fontSize="16px">{count}</Typography>
+                      </Box>
+                    );
+                  })}
+                  
+                  <Divider sx={{ my: 2 }} />
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="h6">Total Threats:</Typography>
+                    <Typography variant="h6" fontWeight="bold">{totalThreats}</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+            
+            {/* View All Threats button added to this section */}
+            {threatList.length > 0 && (
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                <Button 
+                  variant="contained" 
+                  color="primary"
+                  startIcon={<Security />}
+                  size="large"
+                  onClick={() => setViewThreatsDialogOpen(true)}
+                  sx={{ px: 4, py: 1, fontSize: '16px' }}
+                >
+                  View All Threats ({threatList.length})
+                </Button>
+              </Box>
+            )}
+          </>
+        )}
+      </Paper>
+      
+      {/* Threats Dialog */}
+      <Dialog 
+        open={viewThreatsDialogOpen} 
+        onClose={() => setViewThreatsDialogOpen(false)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">All Associated Threats</Typography>
+            <IconButton onClick={() => setViewThreatsDialogOpen(false)}>
+              <MoreVert />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <SearchableThreatsSection 
+            threatList={threatList} 
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -979,60 +945,56 @@ function SearchableVulnerabilitiesList({ vulnerabilities }: { vulnerabilities: V
 function SearchableThreatsSection({ threatList }: { threatList: (string | { _id: string })[] }) {
   const theme = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
-  const [threats, setThreats] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const { cachedThreats, isLoadingThreats } = useContext(ArtifactDataContext);
   
-  // Fetch all threat data
-  useEffect(() => {
-    const fetchThreats = async () => {
-      if (!threatList?.length) {
-        setLoading(false);
-        return;
-      }
-      
-      const fetchedThreats = [];
-      
-      for (const threatIdItem of threatList) {
-        // Handle both string IDs and object references with _id property
-        const threatId = typeof threatIdItem === 'string' ? threatIdItem : (threatIdItem as { _id: string })._id;
-        
-        try {
-          const threatQuery = await useThreatQuery(threatId).refetch();
-          const threat = threatQuery.data?.data;
-          if (threat) {
-            fetchedThreats.push(threat);
-          }
-        } catch (error) {
-          console.error(`Error fetching threat ${threatId}:`, error);
-        }
-      }
-      
-      setThreats(fetchedThreats);
-      setLoading(false);
-    };
-    
-    fetchThreats();
-  }, [threatList]);
+  // STRIDE threat types
+  const threatTypeOptions = [
+    'Spoofing', 
+    'Tampering', 
+    'Repudiation', 
+    'Information Disclosure', 
+    'Denial of Service', 
+    'Elevation of Privilege'
+  ];
   
   const filteredThreats = useMemo(() => {
-    return threats.filter(threat => 
-      searchTerm === '' || 
-      threat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      threat.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      threat.type.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [threats, searchTerm]);
+    return cachedThreats.filter(threat => {
+      // Filter by search term
+      const matchesSearch = searchTerm === '' || 
+        threat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        threat.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        threat.type.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Filter by type
+      const matchesType = selectedTypes.length === 0 || 
+        selectedTypes.includes(threat.type);
+      
+      return matchesSearch && matchesType;
+    });
+  }, [cachedThreats, searchTerm, selectedTypes]);
   
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Non mitigated': return theme.palette.error.main;
-      case 'Partially mitigated': return theme.palette.warning.main;
-      case 'Fully mitigated': return theme.palette.success.main;
-      default: return theme.palette.grey[500];
+  // Get threat type icon and color
+  const getThreatTypeInfo = (type: string) => {
+    switch (type) {
+      case 'Spoofing': 
+        return { icon: '👤', color: theme.palette.error.main };
+      case 'Tampering': 
+        return { icon: '🔧', color: theme.palette.warning.main };
+      case 'Repudiation': 
+        return { icon: '❌', color: theme.palette.error.dark };
+      case 'Information Disclosure': 
+        return { icon: '🔍', color: theme.palette.info.main };
+      case 'Denial of Service': 
+        return { icon: '⛔', color: theme.palette.warning.dark };
+      case 'Elevation of Privilege': 
+        return { icon: '🔑', color: theme.palette.secondary.main };
+      default: 
+        return { icon: '⚠️', color: theme.palette.grey[500] };
     }
   };
   
-  if (loading) {
+  if (isLoadingThreats) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
         <CircularProgress />
@@ -1065,71 +1027,102 @@ function SearchableThreatsSection({ threatList }: { threatList: (string | { _id:
               </InputAdornment>
             ),
           }}
+          sx={{ mb: 2 }}
         />
+        
+        {/* Type filter chips */}
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+            <FilterList sx={{ fontSize: 18, mr: 0.5 }} /> Filter by type:
+          </Typography>
+          {threatTypeOptions.map((type) => {
+            const { color } = getThreatTypeInfo(type);
+            return (
+              <Chip
+                key={type}
+                label={type}
+                onClick={() => {
+                  setSelectedTypes(prev => 
+                    prev.includes(type) 
+                      ? prev.filter(t => t !== type) 
+                      : [...prev, type]
+                  )
+                }}
+                color={selectedTypes.includes(type) ? 'primary' : 'default'}
+                variant={selectedTypes.includes(type) ? 'filled' : 'outlined'}
+                sx={{ 
+                  bgcolor: selectedTypes.includes(type) ? color : 'transparent',
+                  borderColor: color,
+                  color: selectedTypes.includes(type) ? 'white' : 'inherit'
+                }}
+              />
+            );
+          })}
+          
+          {selectedTypes.length > 0 && (
+            <Chip 
+              label="Clear filters" 
+              onClick={() => setSelectedTypes([])}
+              variant="outlined"
+              size="small"
+            />
+          )}
+        </Box>
       </Box>
       
       {filteredThreats.length > 0 ? (
         <Grid container spacing={2}>
-          {filteredThreats.map(threat => (
-            <Grid item xs={12} key={threat._id}>
-              <Card 
-                elevation={0} 
-                sx={{ 
-                  border: `1px solid ${theme.palette.divider}`,
-                  borderRadius: 2,
-                  overflow: 'visible'
-                }}
-              >
-                <Box 
+          {filteredThreats.map(threat => {
+            const { icon, color } = getThreatTypeInfo(threat.type);
+            return (
+              <Grid item xs={12} key={threat._id}>
+                <Card 
+                  elevation={0} 
                   sx={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    p: 2,
-                    borderBottom: `1px solid ${theme.palette.divider}`,
-                    bgcolor: alpha(theme.palette.background.default, 0.6),
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 2,
+                    overflow: 'visible'
                   }}
                 >
-                  <Security sx={{ color: getStatusColor(threat.status), mr: 1.5 }} />
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                      {threat.name}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        STRIDE Type: {threat.type}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Chip 
-                    label={threat.status}
+                  <Box 
                     sx={{ 
-                      bgcolor: getStatusColor(threat.status),
-                      color: 'white',
-                      fontWeight: 'bold'
+                      display: 'flex',
+                      alignItems: 'center',
+                      p: 2,
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      bgcolor: alpha(theme.palette.background.default, 0.6),
                     }}
-                  />
-                </Box>
-                
-                <CardContent sx={{ p: 2 }}>
-                  <Typography variant="body2">
-                    {threat.description}
-                  </Typography>
-                  
-                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button 
-                      variant="outlined" 
-                      size="small"
-                      component={Link}
-                      href={`/threats?threatId=${threat._id}`}
-                      sx={{ textDecoration: 'none' }}
-                    >
-                      View Threat Details
-                    </Button>
+                  >
+                    <Typography variant="h6" sx={{ mr: 1.5 }}>{icon}</Typography>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                        {threat.name}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          STRIDE Type: {threat.type}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Chip 
+                      label={threat.type}
+                      sx={{ 
+                        bgcolor: color,
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }}
+                    />
                   </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+                  
+                  <CardContent sx={{ p: 2 }}>
+                    <Typography variant="body2">
+                      {threat.description}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
       ) : (
         <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -1245,6 +1238,18 @@ export default function ArtifactDetail() {
   const [viewVulnDialogOpen, setViewVulnDialogOpen] = useState(false);
   const [viewThreatsDialogOpen, setViewThreatsDialogOpen] = useState(false);
   
+  // State for caching fetched data
+  const [cachedThreats, setCachedThreats] = useState<Threat[]>([]);
+  const [isLoadingThreats, setIsLoadingThreats] = useState(true);
+
+  // Context provider value
+  const artifactDataContextValue = {
+    cachedThreats,
+    setCachedThreats,
+    isLoadingThreats,
+    setIsLoadingThreats,
+  };
+  
   if (artifactQuery.isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -1288,118 +1293,90 @@ export default function ArtifactDetail() {
   const hasThreats = artifact.threatList && artifact.threatList.length > 0;
 
   return (
-    <Box 
-      sx={{
-        flexGrow: 1,
-        minHeight: '100vh',
-        bgcolor: theme.palette.mode === 'dark' ? 'background.default' : alpha(theme.palette.primary.light, 0.02),
-      }}
-    >
-      <Container sx={{ py: 4 }} maxWidth="xl">
-        <PageHeader artifact={artifact} />
-        
-        <Grid container spacing={3}>
-          <Grid item xs={12} lg={8}>
-            <Stack spacing={3}>
-              {/* Vulnerability Summary */}
-              <VulnerabilitiesSummary vulnerabilities={artifact.vulnerabilityList || []} />
-              
-              {/* Threat Summary */}
-              <ThreatSummary threatList={artifact.threatList.map(threat => 
-                typeof threat === 'string' ? threat : threat._id
-              )} />
-              
-              {/* Action buttons for view detailed lists */}
-              <Grid container spacing={2}>
-                {hasVulnerabilities && (
-                  <Grid item xs={12} sm={6}>
-                    <Button 
-                      fullWidth
-                      variant="outlined" 
-                      startIcon={<BugReport />}
-                      size="large"
-                      onClick={() => setViewVulnDialogOpen(true)}
-                    >
-                      View All Vulnerabilities ({artifact.vulnerabilityList?.length})
-                    </Button>
-                  </Grid>
-                )}
-                
-                {hasThreats && (
-                  <Grid item xs={12} sm={6}>
-                    <Button 
-                      fullWidth
-                      variant="outlined" 
-                      startIcon={<Security />}
-                      size="large" 
-                      onClick={() => setViewThreatsDialogOpen(true)}
-                    >
-                      View All Threats ({artifact.threatList?.length})
-                    </Button>
-                  </Grid>
-                )}
-              </Grid>
-            </Stack>
-          </Grid>
+    <ArtifactDataContext.Provider value={artifactDataContextValue}>
+      <Box 
+        sx={{
+          flexGrow: 1,
+          minHeight: '100vh',
+          bgcolor: theme.palette.mode === 'dark' ? 'background.default' : alpha(theme.palette.primary.light, 0.02),
+        }}
+      >
+        <Container sx={{ py: 4 }} maxWidth="xl">
+          <PageHeader artifact={artifact} />
           
-          <Grid item xs={12} lg={4}>
-            <ArtifactInfoSection 
-              artifact={artifact} 
-              onEditClick={handleOpenUpdateDialog} 
-            />
+          <Grid container spacing={3}>
+            <Grid item xs={12} lg={8}>
+              <Stack spacing={3}>
+                {/* Vulnerability Summary */}
+                <VulnerabilitiesSummary vulnerabilities={artifact.vulnerabilityList || []} />
+                
+                {/* Threat Summary */}
+                <ThreatSummary threatList={artifact.threatList.map(threat => 
+                  typeof threat === 'string' ? threat : threat._id
+                )} />
+              
+              </Stack>
+            </Grid>
+            
+            <Grid item xs={12} lg={4}>
+              <ArtifactInfoSection 
+                artifact={artifact} 
+                onEditClick={handleOpenUpdateDialog} 
+              />
+            </Grid>
           </Grid>
-        </Grid>
-      </Container>
-      
-      {/* Update Artifact Dialog */}
-      <UpdateArtifactDialog
-        open={updateDialogOpen}
-        setOpen={setUpdateDialogOpen}
-      />
-      
-      {/* Vulnerabilities Dialog */}
-      <Dialog 
-        open={viewVulnDialogOpen} 
-        onClose={() => setViewVulnDialogOpen(false)}
-        fullWidth
-        maxWidth="md"
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">All Vulnerabilities</Typography>
-            <IconButton onClick={() => setViewVulnDialogOpen(false)}>
-              <MoreVert />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <SearchableVulnerabilitiesList vulnerabilities={artifact.vulnerabilityList || []} />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Threats Dialog */}
-      <Dialog 
-        open={viewThreatsDialogOpen} 
-        onClose={() => setViewThreatsDialogOpen(false)}
-        fullWidth
-        maxWidth="md"
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">All Associated Threats</Typography>
-            <IconButton onClick={() => setViewThreatsDialogOpen(false)}>
-              <MoreVert />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <SearchableThreatsSection 
-            threatList={artifact.threatList.map(threat => 
-              typeof threat === 'string' ? threat : threat._id
-            )} 
-          />
-        </DialogContent>
-      </Dialog>
-    </Box>
+        </Container>
+        
+        {/* Update Artifact Dialog */}
+        <UpdateArtifactDialog
+          open={updateDialogOpen}
+          setOpen={setUpdateDialogOpen}
+        />
+        
+        {/* Vulnerabilities Dialog */}
+        <Dialog 
+          open={viewVulnDialogOpen} 
+          onClose={() => setViewVulnDialogOpen(false)}
+          fullWidth
+          maxWidth="md"
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6">All Vulnerabilities</Typography>
+              <IconButton onClick={() => setViewVulnDialogOpen(false)}>
+                <MoreVert />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <SearchableVulnerabilitiesList vulnerabilities={artifact.vulnerabilityList || []} />
+          </DialogContent>
+        </Dialog>
+        
+        {/* Threats Dialog */}
+        <Dialog 
+          open={viewThreatsDialogOpen} 
+          onClose={() => setViewThreatsDialogOpen(false)}
+          fullWidth
+          maxWidth="md"
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6">All Associated Threats</Typography>
+              <IconButton onClick={() => setViewThreatsDialogOpen(false)}>
+                <MoreVert />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <SearchableThreatsSection 
+              threatList={artifact.threatList.map(threat => 
+                typeof threat === 'string' ? threat : threat._id
+              )} 
+            />
+          </DialogContent>
+        </Dialog>
+      </Box>
+    </ArtifactDataContext.Provider>
   );
 }

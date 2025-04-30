@@ -64,8 +64,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Threat } from "~/hooks/fetching/threat";
 import { useThreatQuery } from "~/hooks/fetching/threat/query";
 import { typeOptions } from "~/utils/threat-display";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EditTicketDialog from "~/components/dialogs/EditTicketDialog";
+import { getThreat } from "~/hooks/fetching/threat/axios";
 
 dayjs.extend(relativeTime);
 
@@ -486,14 +487,31 @@ function History({ ticketId }: { ticketId: string }) {
 }
 
 function ThreatDetailsCard({ threatId }: { threatId: string }) {
-  const threatQuery = useThreatQuery(threatId);
-  const threat = threatQuery.data?.data;
+  const { currentProject } = useParams();
+  const encodedUrl = encodeURIComponent(currentProject);
+  const [threat, setThreat] = useState<Threat | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const theme = useTheme();
-  
-  // Add more debugging information
-  console.log('ThreatDetailsCard Debug:', { threatId });
-  
-  if (threatQuery.isLoading) {
+
+  useEffect(() => {
+    const fetchThreat = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getThreat(threatId);
+        setThreat(response.data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Failed to fetch threat"));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchThreat();
+  }, [threatId]);
+
+  if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
         <CircularProgress size={24} />
@@ -501,16 +519,16 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
     );
   }
 
-  if (threatQuery.isError) {
+  if (error) {
     return (
       <Box sx={{ textAlign: 'center', py: 3 }}>
         <Typography color="error">
-          Error loading threat information: {threatQuery.error instanceof Error ? threatQuery.error.message : 'Unknown error'}
+          Error loading threat information: {error.message}
         </Typography>
       </Box>
     );
   }
-  
+
   if (!threat) {
     return (
       <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -524,32 +542,8 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
     );
   }
 
-  // Make sure we properly handle any unexpected properties that might be objects
   const threatTypeInfo = typeOptions.find(opt => opt.name === threat.type);
-  
-  // Determine the color based on threat status
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Non mitigated': return theme.palette.error.main;
-      case 'Partially mitigated': return theme.palette.warning.main;
-      case 'Fully mitigated': return theme.palette.success.main;
-      default: return theme.palette.grey[500];
-    }
-  };
 
-  // Determine icon based on threat type
-  const getThreatTypeIcon = (type: string) => {
-    switch (type) {
-      case 'Spoofing': return '👤';
-      case 'Tampering': return '🔧';
-      case 'Repudiation': return '❌';
-      case 'Information Disclosure': return '🔍';
-      case 'Denial of Service': return '⛔';
-      case 'Elevation of Privilege': return '🔑';
-      default: return '⚠️';
-    }
-  };
-  
   return (
     <Card 
       elevation={0} 
@@ -568,10 +562,10 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
           bgcolor: alpha(theme.palette.background.default, 0.6),
         }}
       >
-        <BugReport sx={{ color: getStatusColor(threat.status), mr: 1.5 }} />
+        <BugReport sx={{ color: theme.palette.primary.main, mr: 1.5 }} />
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            {typeof threat.name === 'string' ? threat.name : 'Unnamed Threat'}
+            {threat.name || 'Unnamed Threat'}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
             <Typography variant="body2" color="text.secondary">
@@ -579,177 +573,33 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
             </Typography>
             <Tooltip title={threatTypeInfo?.description || ""}>
               <Chip
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Typography variant="caption" sx={{ fontSize: '1rem' }}>
-                      {getThreatTypeIcon(typeof threat.type === 'string' ? threat.type : 'Unknown')}
-                    </Typography>
-                    <Typography variant="body2">{typeof threat.type === 'string' ? threat.type : 'Unknown'}</Typography>
-                  </Box>
-                }
+                label={threat.type || 'Unknown'}
                 size="small"
                 variant="outlined"
               />
             </Tooltip>
           </Box>
         </Box>
-        <Chip 
-          label={typeof threat.status === 'string' ? threat.status : 'Unknown'}
-          sx={{ 
-            bgcolor: getStatusColor(typeof threat.status === 'string' ? threat.status : ''),
-            color: 'white',
-            fontWeight: 'bold'
-          }}
-        />
       </Box>
-      
+
       <CardContent sx={{ p: 3 }}>
-        <Stack spacing={3}>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Description
-            </Typography>
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                p: 2, 
-                bgcolor: alpha(theme.palette.background.default, 0.7),
-                borderRadius: 1
-              }}
-            >
-              <Typography variant="body2">
-                {typeof threat.description === 'string' ? threat.description : 'No description available'}
-              </Typography>
-            </Paper>
-          </Box>
-          
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Risk Assessment (DREAD)
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Paper 
-                  elevation={0} 
-                  sx={{ 
-                    p: 2, 
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    borderRadius: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    mb: 2
-                  }}
-                >
-                  <Box sx={{ position: 'relative', display: 'inline-flex', mr: 2 }}>
-                    <CircularProgress
-                      variant="determinate"
-                      value={
-                        typeof threat.score === 'object' && 
-                        threat.score !== null && 
-                        typeof threat.score.total === 'number' 
-                          ? threat.score.total * 10 
-                          : 0
-                      }
-                      sx={{ 
-                        color: 
-                          typeof threat.score === 'object' && 
-                          threat.score !== null &&
-                          typeof threat.score.total === 'number'
-                            ? threat.score.total >= 8 
-                              ? theme.palette.error.main 
-                              : threat.score.total >= 5 
-                                ? theme.palette.warning.main
-                                : theme.palette.success.main
-                            : theme.palette.grey[500]
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        top: 0,
-                        left: 0,
-                        bottom: 0,
-                        right: 0,
-                        position: 'absolute',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Typography variant="caption" fontWeight="bold">
-                        {typeof threat.score === 'object' && 
-                         threat.score !== null && 
-                         typeof threat.score.total === 'number'
-                          ? threat.score.total.toFixed(1) 
-                          : '0.0'
-                        }
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" fontWeight="medium">
-                      Total Risk Score
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Based on DREAD scoring model
-                    </Typography>
-                  </Box>
-                </Paper>
-              </Grid>
-              
-              {typeof threat.score === 'object' && 
-               threat.score !== null && 
-               typeof threat.score.details === 'object' &&
-               threat.score.details !== null &&
-                Object.entries(threat.score.details).map(([key, value]) => (
-                <Grid item xs={6} md={4} lg={2.4} key={key}>
-                  <Paper 
-                    elevation={0} 
-                    sx={{ 
-                      p: 1.5, 
-                      bgcolor: alpha(theme.palette.background.default, 0.7),
-                      borderRadius: 1,
-                      textAlign: 'center'
-                    }}
-                  >
-                    <Typography variant="h6" sx={{ mb: 0.5 }}>
-                      {typeof value === 'number' ? value : 0}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
-                      {key === 'affectedUsers' ? 'Affected Users' : key}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-          
-          {Array.isArray(threat.mitigation) && threat.mitigation.length > 0 && (
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Mitigation Measures
-              </Typography>
-              <Paper 
-                elevation={0} 
-                sx={{ 
-                  p: 2, 
-                  bgcolor: alpha(theme.palette.success.main, 0.08),
-                  borderRadius: 1
-                }}
-              >
-                <Stack spacing={1}>
-                  {threat.mitigation.map((item, idx) => (
-                    <Box key={idx} sx={{ display: 'flex' }}>
-                      <Security fontSize="small" sx={{ mr: 1.5, color: theme.palette.success.main, mt: 0.3 }} />
-                      <Typography variant="body2">
-                        {typeof item === 'string' ? item : `Mitigation measure ${idx + 1}`}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Stack>
-              </Paper>
-            </Box>
-          )}
-        </Stack>
+        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+          Description
+        </Typography>
+        <Typography variant="body2">
+          {threat.description || 'No description available'}
+        </Typography>
+        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+          <Button 
+            variant="outlined" 
+            size="small"
+            component={Link}
+            href={`/${encodedUrl}/threats/${threat._id}`}
+            sx={{ textDecoration: 'none' }}
+          >
+            View Details
+          </Button>
+        </Box>
       </CardContent>
     </Card>
   );
@@ -920,7 +770,7 @@ export default function TicketDetail() {
                 </Typography>
                 
                 {ticket.targetedThreat ? (
-                  <ThreatDetailsCard threatId={ticket.targetedThreat} />
+                  <ThreatDetailsCard threatId={typeof ticket.targetedThreat === 'string' ? ticket.targetedThreat : (ticket.targetedThreat as { _id: string })._id} />
                 ) : (
                   <Box sx={{ textAlign: 'center', py: 3 }}>
                     <Typography color="text.secondary">

@@ -6,6 +6,7 @@ export interface Vulnerability {
   score?: number;
   severity: string;
   cwes: string[];
+  cvssVector?: string;
   _id: string;
 }
 
