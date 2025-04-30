@@ -11,6 +11,7 @@ export interface Vulnerability {
 }
 
 export interface Artifact {
+  rateReScan: number;
   _id: string;
   name: string;
   type: "image" | "log" | "source code" | "executable" | "library";

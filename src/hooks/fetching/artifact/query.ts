@@ -4,6 +4,7 @@ import {
   getAllArtifacts,
   getArtifact,
   updateArtifact,
+  updateArtifactRateScan,
 } from "~/hooks/fetching/artifact/axios";
 import { ArtifactUpdate } from ".";
 import { toast } from "~/utils/toast";
@@ -26,6 +27,25 @@ export function useUpdateArtifactMutation() {
   return useMutation({
     mutationFn: ({ artifactId, artifact }: UpdateArtifact) =>
       updateArtifact(artifactId, artifact),
+    onSuccess: (response, { artifactId }) => {
+      toast(response, enqueueSnackbar, () => {
+        queryClient.invalidateQueries(["artifact", artifactId]);
+        queryClient.invalidateQueries(["phase"]);
+      });
+    },
+  });
+}
+
+export function useUpdateArtifactRateScanMutation() {
+  interface UpdateArtifactRateScan {
+    artifactId: string;
+    rate: number;
+  }
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+  return useMutation({
+    mutationFn: ({ artifactId, rate }: UpdateArtifactRateScan) =>
+      updateArtifactRateScan(artifactId, rate),
     onSuccess: (response, { artifactId }) => {
       toast(response, enqueueSnackbar, () => {
         queryClient.invalidateQueries(["artifact", artifactId]);

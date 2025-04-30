@@ -22,3 +22,13 @@ export async function updateArtifact(
   });
   return response.data;
 }
+
+export async function updateArtifactRateScan(
+  artifactId: string,
+  rate: number
+): PromiseServer<Artifact> {
+  const response = await api.patch(`/artifact/${artifactId}/rate`, {
+    data: { rate },
+  });
+  return response.data;
+}

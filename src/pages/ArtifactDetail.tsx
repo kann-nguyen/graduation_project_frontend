@@ -51,6 +51,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  Slider,
 } from "@mui/material";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -67,6 +68,8 @@ import { Threat } from "~/hooks/fetching/threat";
 import { Legend, Pie, PieChart, ResponsiveContainer, Cell } from "recharts";
 import SeverityStatistics from "~/components/charts/SeverityStatisticsChart";
 import ThreatStatistics from "~/components/charts/ThreatStatisticsChart";
+import { useAccountContext } from '~/hooks/general';
+import { useUpdateArtifactRateScanMutation } from '~/hooks/fetching/artifact/query';
 
 dayjs.extend(relativeTime);
 
@@ -1137,6 +1140,24 @@ function SearchableThreatsSection({ threatList }: { threatList: (string | { _id:
 
 function ArtifactInfoSection({ artifact, onEditClick }: { artifact: Artifact, onEditClick: () => void }) {
   const theme = useTheme();
+  const [rateValue, setRateValue] = useState<number>(artifact.rateReScan || 50);
+  const [isEditing, setIsEditing] = useState(false);
+  const account = useAccountContext();
+  const isManager = account?.role === 'manager';
+  
+  const updateRateScanMutation = useUpdateArtifactRateScanMutation();
+
+  const handleRateChange = (event: any, newValue: number | number[]) => {
+    setRateValue(newValue as number);
+  };
+
+  const handleRateSave = () => {
+    updateRateScanMutation.mutate({
+      artifactId: artifact._id,
+      rate: rateValue
+    });
+    setIsEditing(false);
+  };
   
   return (
     <Paper 
@@ -1222,6 +1243,107 @@ function ArtifactInfoSection({ artifact, onEditClick }: { artifact: Artifact, on
             </Box>
           </Grid>
         )}
+        
+        {/* Rescan Rate Configuration Section */}
+        <Grid item xs={12}>
+          <Divider sx={{ my: 2 }} />
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', mt: 2 }}>
+            <Security sx={{ color: 'text.secondary', mr: 2, mt: 0.5 }} />
+            <Box sx={{ width: '100%' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Rescan Rate
+                </Typography>
+                {isManager && (
+                  isEditing ? (
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        onClick={() => {
+                          setRateValue(artifact.rateReScan || 50);
+                          setIsEditing(false);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        size="small" 
+                        variant="contained" 
+                        onClick={handleRateSave}
+                        disabled={updateRateScanMutation.isLoading}
+                      >
+                        {updateRateScanMutation.isLoading ? 'Saving...' : 'Save'}
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => setIsEditing(true)}
+                      startIcon={<Edit fontSize="small" />}
+                    >
+                      Configure
+                    </Button>
+                  )
+                )}
+              </Box>
+              
+              {isEditing ? (
+                <Box sx={{ px: 1, py: 2 }}>
+                  <Slider
+                    value={rateValue}
+                    onChange={handleRateChange}
+                    valueLabelDisplay="auto"
+                    step={5}
+                    marks
+                    min={0}
+                    max={100}
+                    sx={{
+                      '& .MuiSlider-markLabel': {
+                        fontSize: '0.75rem',
+                      },
+                    }}
+                  />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                    <Typography variant="caption" color="text.secondary">Lower rescan frequency</Typography>
+                    <Typography variant="caption" color="text.secondary">Higher rescan frequency</Typography>
+                  </Box>
+                </Box>
+              ) : (
+                <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={artifact.rateReScan || 50} 
+                    sx={{ 
+                      height: 8, 
+                      borderRadius: 2, 
+                      flexGrow: 1,
+                      backgroundColor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.2) : alpha(theme.palette.primary.main, 0.1)
+                    }} 
+                  />
+                  <Typography variant="body2" fontWeight="bold">
+                    {artifact.rateReScan || 50}%
+                  </Typography>
+                </Box>
+              )}
+              
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {artifact.rateReScan || 50 > 70 
+                  ? "High frequency: Artifact will be scanned more frequently to detect vulnerabilities promptly."
+                  : artifact.rateReScan || 50 > 30
+                  ? "Moderate frequency: Balanced approach to rescanning this artifact."
+                  : "Low frequency: This artifact is scanned less frequently to conserve resources."}
+              </Typography>
+              
+              {!isManager && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  Note: Only managers can change the rescan rate.
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </Grid>
       </Grid>
     </Paper>
   );
