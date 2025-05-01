@@ -134,7 +134,20 @@ export const ThreatPageHeader = ({
           color="primary" 
           variant="outlined"
           size="medium"
-          sx={{ fontWeight: 'medium', px: 1 }}
+          sx={{ fontWeight: 'medium', px: 1, cursor: 'pointer' }}
+          onClick={() => {
+            // Open an official link based on threat type
+            const typeLinks = {
+              'Spoofing': 'https://owasp.org/www-community/attacks/Spoofing',
+              'Tampering': 'https://owasp.org/www-community/attacks/Tampering',
+              'Repudiation': 'https://owasp.org/www-community/attacks/Repudiation_Attack',
+              'Information Disclosure': 'https://owasp.org/www-community/Information_Disclosure',
+              'Denial of Service': 'https://owasp.org/www-community/attacks/Denial_of_Service',
+              'Elevation of Privilege': 'https://owasp.org/www-community/Privilege_escalation_attack'
+            };
+            const linkUrl = typeLinks[threat.type as keyof typeof typeLinks] || 'https://owasp.org/www-community/STRIDE';
+            window.open(linkUrl, '_blank');
+          }}
         />
         <Chip 
           icon={<PriorityHigh />} 
@@ -415,12 +428,26 @@ export const ThreatContextCard = ({ detailedInfo }: { detailedInfo: any }) => {
                 Common Attack Vectors
               </Typography>
               <List dense disablePadding>
-                {threatContext.commonAttackVectors.map((vector: string, index: number) => (
+                {threatContext.commonAttackVectors.map((vector: any, index: number) => (
                   <ListItem key={index} disablePadding sx={{ pl: 0, pb: 0.5 }}>
                     <ListItemText 
                       primary={
                         <Typography variant="body2">
-                          • {vector}
+                          <Link 
+                            href={vector.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ 
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              '&:hover': { 
+                                textDecoration: 'underline', 
+                                color: theme.palette.warning.main 
+                              } 
+                            }}
+                          >
+                            • {vector.text}
+                          </Link>
                         </Typography>
                       } 
                     />
@@ -445,12 +472,26 @@ export const ThreatContextCard = ({ detailedInfo }: { detailedInfo: any }) => {
                 Security Principles
               </Typography>
               <List dense disablePadding>
-                {threatContext.securityPrinciples.map((principle: string, index: number) => (
+                {threatContext.securityPrinciples.map((principle: any, index: number) => (
                   <ListItem key={index} disablePadding sx={{ pl: 0, pb: 0.5 }}>
                     <ListItemText 
                       primary={
                         <Typography variant="body2">
-                          • {principle}
+                          <Link 
+                            href={principle.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ 
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              '&:hover': { 
+                                textDecoration: 'underline', 
+                                color: theme.palette.success.main 
+                              } 
+                            }}
+                          >
+                            • {principle.text}
+                          </Link>
                         </Typography>
                       } 
                     />
