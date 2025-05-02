@@ -32,7 +32,8 @@ import {
   Badge,
   useTheme,
   Fade,
-  Container
+  Container,
+  TextField
 } from '@mui/material';
 import { 
   ExpandMore as ExpandMoreIcon,
@@ -64,7 +65,8 @@ import {
   Grade,
   Tune,
   Visibility,
-  Speed
+  Speed,
+  Save as SaveIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Threat } from '~/hooks/fetching/threat';
@@ -838,11 +840,13 @@ export const SuggestFixCard = ({ onSuggestFix }: { onSuggestFix: () => void }) =
 export const SuggestedFixesDialog = ({ 
   open, 
   onClose, 
-  suggestedFixes 
+  suggestedFixes,
+  userMitigations = []
 }: { 
   open: boolean, 
   onClose: () => void, 
-  suggestedFixes: any 
+  suggestedFixes: any,
+  userMitigations?: any[]
 }) => {
   const theme = useTheme();
   
@@ -875,51 +879,65 @@ export const SuggestedFixesDialog = ({
         {suggestedFixes ? (
           <Fade in={true} timeout={300}>
             <Box>
-              {/* General Mitigations */}
-              <Box sx={{ mb: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main, mr: 2, width: 32, height: 32 }}>
-                    <VerifiedUser fontSize="small" />
-                  </Avatar>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    General Mitigations
-                  </Typography>
+              {/* User-Added Mitigations - New Section */}
+              {userMitigations.length > 0 && (
+                <Box sx={{ mb: 4 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar sx={{ bgcolor: alpha(theme.palette.secondary.main, 0.1), color: theme.palette.secondary.main, mr: 2, width: 32, height: 32 }}>
+                      <Shield fontSize="small" />
+                    </Avatar>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      Mitigations From Your Expert
+                    </Typography>
+                  </Box>
+                  
+                  <Grid container spacing={2}>
+                    {userMitigations.map((mitigation, index) => (
+                      <Grid item xs={12} key={mitigation._id || index}>
+                        <Paper 
+                          elevation={0} 
+                          sx={{ 
+                            p: 2, 
+                            border: `1px solid ${theme.palette.divider}`,
+                            borderRadius: 2,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              boxShadow: `0px 4px 10px ${alpha(theme.palette.secondary.main, 0.1)}`,
+                            }
+                          }}
+                        >
+                          <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+                            {mitigation.title}
+                          </Typography>
+                          <Typography variant="body2" paragraph>
+                            {mitigation.description}
+                          </Typography>
+                          <Box sx={{ background: alpha(theme.palette.secondary.main, 0.05), p: 2, borderRadius: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom color="secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Code fontSize="small" sx={{ mr: 1 }} /> Implementation
+                            </Typography>
+                            <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+                              {mitigation.implementation}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            {mitigation.createdBy?.name && (
+                              <Typography variant="caption" color="text.secondary">
+                                Created by: {mitigation.createdBy.name}
+                              </Typography>
+                            )}
+                            {mitigation.createdAt && (
+                              <Typography variant="caption" color="text.secondary">
+                                Added: {new Date(mitigation.createdAt).toLocaleDateString()}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
                 </Box>
-                
-                <Grid container spacing={2}>
-                  {suggestedFixes.mitigationSuggestions?.general?.map((mitigation: any, index: number) => (
-                    <Grid item xs={12} key={index}>
-                      <Paper 
-                        elevation={0} 
-                        sx={{ 
-                          p: 2, 
-                          border: `1px solid ${theme.palette.divider}`,
-                          borderRadius: 2,
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            boxShadow: `0px 4px 10px ${alpha(theme.palette.primary.main, 0.1)}`,
-                          }
-                        }}
-                      >
-                        <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-                          {mitigation.title}
-                        </Typography>
-                        <Typography variant="body2" paragraph>
-                          {mitigation.description}
-                        </Typography>
-                        <Box sx={{ background: alpha(theme.palette.primary.main, 0.05), p: 2, borderRadius: 2 }}>
-                          <Typography variant="subtitle2" gutterBottom color="primary" sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Code fontSize="small" sx={{ mr: 1 }} /> Implementation
-                          </Typography>
-                          <Typography variant="body2">
-                            {mitigation.implementation}
-                          </Typography>
-                        </Box>
-                      </Paper>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
+              )}
 
               {/* Specific Mitigations */}
               {suggestedFixes.mitigationSuggestions?.specific?.length > 0 && (
@@ -929,7 +947,7 @@ export const SuggestedFixesDialog = ({
                       <Memory fontSize="small" />
                     </Avatar>
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                      Vulnerability-Specific Mitigations
+                    Mitigations From System
                     </Typography>
                   </Box>
                   
@@ -1100,5 +1118,128 @@ export const SuggestedFixesDialog = ({
         </Button>
       </DialogActions>
     </Dialog>
+  );
+};
+
+// MitigationForm Component for adding or editing mitigations
+export const MitigationForm = ({
+  initialData,
+  onSubmit,
+  onCancel
+}: {
+  initialData?: {
+    title: string;
+    description: string;
+    implementation: string;
+  } | null;
+  onSubmit: (data: { title: string; description: string; implementation: string }) => void;
+  onCancel: () => void;
+}) => {
+  const theme = useTheme();
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [implementation, setImplementation] = useState(initialData?.implementation || '');
+  const [errors, setErrors] = useState<{ title?: string; description?: string; implementation?: string }>({});
+
+  const validateForm = () => {
+    const newErrors: { title?: string; description?: string; implementation?: string } = {};
+    let isValid = true;
+
+    if (!title.trim()) {
+      newErrors.title = 'Title is required';
+      isValid = false;
+    }
+
+    if (!description.trim()) {
+      newErrors.description = 'Description is required';
+      isValid = false;
+    }
+
+    if (!implementation.trim()) {
+      newErrors.implementation = 'Implementation is required';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (validateForm()) {
+      onSubmit({
+        title: title.trim(),
+        description: description.trim(),
+        implementation: implementation.trim()
+      });
+    }
+  };
+
+  return (
+    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        id="title"
+        label="Mitigation Title"
+        name="title"
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        error={!!errors.title}
+        helperText={errors.title}
+        sx={{ mb: 2 }}
+      />
+      
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        id="description"
+        label="Description"
+        name="description"
+        multiline
+        rows={3}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        error={!!errors.description}
+        helperText={errors.description}
+        sx={{ mb: 2 }}
+      />
+      
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        id="implementation"
+        label="Implementation Details"
+        name="implementation"
+        multiline
+        rows={6}
+        value={implementation}
+        onChange={(e) => setImplementation(e.target.value)}
+        error={!!errors.implementation}
+        helperText={errors.implementation || 'Provide detailed steps on how to implement this mitigation'}
+        sx={{ mb: 3 }}
+      />
+      
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+        <Button 
+          onClick={onCancel}
+          variant="outlined"
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="submit"
+          variant="contained"
+          startIcon={<SaveIcon />}
+        >
+          {initialData ? 'Update' : 'Save'} Mitigation
+        </Button>
+      </Box>
+    </Box>
   );
 };
