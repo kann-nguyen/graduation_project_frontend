@@ -5,6 +5,11 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText
 } from "@mui/material";
 import { useForm } from "react-hook-form";
 import { AccountRegister } from "~/hooks/fetching/account";
@@ -85,6 +90,21 @@ export default function CreateNewAccountDialog({
             error={!!errors.email}
             helperText={errors.email?.message}
           />
+          <FormControl fullWidth margin="normal" error={!!errors.role}>
+            <InputLabel id="role-select-label">Role</InputLabel>
+            <Select
+              labelId="role-select-label"
+              label="Role"
+              defaultValue="member"
+              {...register("role", { required: "Role is required" })}
+            >
+              <MenuItem value="admin">Admin</MenuItem>
+              <MenuItem value="project_manager">Project Manager</MenuItem>
+              <MenuItem value="security_expert">Security Expert</MenuItem>
+              <MenuItem value="member">Member</MenuItem>
+            </Select>
+            {errors.role && <FormHelperText>{errors.role.message}</FormHelperText>}
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button color="inherit" onClick={() => setOpen(false)}>

@@ -41,10 +41,14 @@ export default function RoleDistributionChart({
     switch (data.role) {
       case "admin":
         return { ...data, fill: theme.palette.primary.main };
+      case "project_manager":
+        return { ...data, fill: theme.palette.secondary.main };
+      case "security_expert":
+        return { ...data, fill: theme.palette.warning.main };
       case "member":
         return { ...data, fill: theme.palette.success.main };
-      case "manager":
-        return { ...data, fill: theme.palette.secondary.main };
+      default:
+        return { ...data, fill: theme.palette.grey[500] };
     }
   });
   return (

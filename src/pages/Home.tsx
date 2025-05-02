@@ -1,11 +1,21 @@
 import { useUserRole } from "~/hooks/general";
 import MemberHomePage from "./MemberHomePage";
-import ManagerHomePage from "./ManagerHomePage";
 import AdminHomePage from "./AdminHomePage";
+import ProjectManagerHomePage from "./ProjectManagerHomePage";
+import SecurityExpertHomePage from "./SecurityExpertHomePage";
 
 export default function Home() {
   const role = useUserRole();
-  if (role === "manager") return <ManagerHomePage />;
-  else if (role === "member") return <MemberHomePage />;
-  else return <AdminHomePage />;
+  
+  switch (role) {
+    case "project_manager":
+      return <ProjectManagerHomePage />;
+    case "security_expert":
+      return <SecurityExpertHomePage />;
+    case "member":
+      return <MemberHomePage />;
+    case "admin":
+    default:
+      return <AdminHomePage />;
+  }
 }

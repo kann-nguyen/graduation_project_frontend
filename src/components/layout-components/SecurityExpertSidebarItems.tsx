@@ -3,13 +3,12 @@ import { useParams } from "react-router-dom";
 import { useProjectInQuery } from "~/hooks/fetching/user/query";
 import { Item } from "./SidebarItem";
 import {
-  AssessmentOutlined,
   FactCheckOutlined,
   HomeOutlined,
-  SecurityOutlined,
+  BugReportOutlined,
 } from "@mui/icons-material";
 
-export default function ManagerSidebarItems() {
+export default function SecurityExpertSidebarItems() {
   const projectInQuery = useProjectInQuery();
   const projects = projectInQuery.data?.data;
   const firstProject = projects ? encodeURIComponent(projects[0]?.name) : "";
@@ -20,17 +19,16 @@ export default function ManagerSidebarItems() {
   const encodedUrl = encodeURIComponent(currentProject);
   return (
     <List component="nav">
-      <ListSubheader component="div" inset>
-        Project navigation
-      </ListSubheader>
-      <Item text="Home" icon={<HomeOutlined />} path={`/${encodedUrl}/`} />
-      <Item
-        text="Phase"
-        icon={<AssessmentOutlined />}
-        path={`/${encodedUrl}/phases`}
+
+      <Item text="Dashboard" icon={<HomeOutlined />} path={`/${encodedUrl}/`} />
+      <Item 
+        text="Vulnerabilities" 
+        icon={<BugReportOutlined />} 
+        path={`/${encodedUrl}/vulnerabilities`} 
       />
+
       <Item
-        text="Ticket"
+        text="Tickets"
         icon={<FactCheckOutlined />}
         path={`/${encodedUrl}/tickets`}
       />

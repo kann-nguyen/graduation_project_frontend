@@ -1,7 +1,8 @@
 import { Divider, Drawer, Toolbar } from "@mui/material";
 import { useUserRole } from "~/hooks/general";
 import AdminSidebarItems from "./AdminSidebarItems";
-import ManagerSidebarItems from "./ManagerSidebarItems";
+import ProjectManagerSidebarItems from "./ProjectManagerSidebarItems";
+import SecurityExpertSidebarItems from "./SecurityExpertSidebarItems";
 import MemberSidebarItems from "./MemberSidebarItems";
 export interface ItemProps {
   text: string;
@@ -13,10 +14,13 @@ function DrawerItems() {
   switch (role) {
     case "admin":
       return <AdminSidebarItems />;
+    case "project_manager":
+      return <ProjectManagerSidebarItems />;
+    case "security_expert":
+      return <SecurityExpertSidebarItems />;
     case "member":
+    default:
       return <MemberSidebarItems />;
-    case "manager":
-      return <ManagerSidebarItems />;
   }
 }
 export default function Sidebar() {

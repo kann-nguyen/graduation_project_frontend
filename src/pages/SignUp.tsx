@@ -1,30 +1,82 @@
 import { AccountCircle } from "@mui/icons-material";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
   Container,
   CssBaseline,
+  FormControl,
+  FormHelperText,
+  InputLabel,
+  Link,
+  MenuItem,
+  Select,
+  Snackbar,
   TextField,
   ThemeProvider,
   Typography,
   useTheme,
 } from "@mui/material";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { AccountRegister } from "~/hooks/fetching/account";
-import { useCreateAccountMutation } from "~/hooks/fetching/auth/query";
+import axios from "axios";
+import api from "~/api";
+
 export default function SignUp() {
-  const registerMutation = useCreateAccountMutation();
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  
   async function onSubmit(data: AccountRegister) {
-    registerMutation.mutate(data);
+    setIsSubmitting(true);
+    console.log("Form data being submitted:", data);
+    
+    try {
+      // Simplified direct API call instead of using the mutation
+      const response = await api.post("/account/reg", data, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log("Registration response:", response);
+      setSuccessMessage("Account created successfully!");
+      
+      // Show success message then redirect to login
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      const errorMsg = error?.response?.data?.message || "Registration failed. Please try again.";
+      setErrorMessage(errorMsg);
+      setOpenSnackbar(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
+
+  const handleCloseSnackbar = (event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
+  };
+  
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
   } = useForm<AccountRegister>();
+  
   const theme = useTheme();
+  
   return (
     <ThemeProvider theme={theme}>
       <Container component="main" maxWidth="xs">
@@ -43,6 +95,11 @@ export default function SignUp() {
           <Typography component="h1" variant="h5">
             Sign up
           </Typography>
+          {successMessage && (
+            <Alert severity="success" sx={{ width: '100%', mt: 2 }}>
+              {successMessage}
+            </Alert>
+          )}
           <Box
             component="form"
             onSubmit={handleSubmit(onSubmit)}
@@ -53,6 +110,14 @@ export default function SignUp() {
               fullWidth
               {...register("username", {
                 required: "Username is required",
+                minLength: {
+                  value: 3,
+                  message: "Username must be at least 3 characters"
+                },
+                pattern: {
+                  value: /^[a-zA-Z0-9_-]+$/,
+                  message: "Username can only contain letters, numbers, underscores and hyphens"
+                }
               })}
               autoFocus
               label="Username"
@@ -65,6 +130,10 @@ export default function SignUp() {
               fullWidth
               {...register("password", {
                 required: "Password is required",
+                minLength: {
+                  value: 6,
+                  message: "Password must be at least 6 characters"
+                }
               })}
               error={!!errors.password}
               helperText={errors.password?.message}
@@ -94,23 +163,53 @@ export default function SignUp() {
                 required: "Email is required",
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "invalid email address",
+                  message: "Invalid email address",
                 },
               })}
               error={!!errors.email}
               helperText={errors.email?.message}
             />
+            <FormControl fullWidth margin="normal" error={!!errors.role}>
+              <InputLabel id="role-select-label">Role</InputLabel>
+              <Select
+                labelId="role-select-label"
+                label="Role"
+                defaultValue="member"
+                {...register("role")}
+              >
+                <MenuItem value="member">Member</MenuItem>
+                <MenuItem value="project_manager">Project Manager</MenuItem>
+                <MenuItem value="security_expert">Security Expert</MenuItem>
+              </Select>
+              {errors.role && <FormHelperText>{errors.role.message}</FormHelperText>}
+            </FormControl>
             <Button
               type="submit"
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
+              disabled={isSubmitting}
             >
-              Submit
+              {isSubmitting ? "Signing up..." : "Sign Up"}
             </Button>
+            <Box textAlign="center" mt={2}>
+              <Link component={RouterLink} to="/login" variant="body2">
+                Already have an account? Sign in
+              </Link>
+            </Box>
           </Box>
         </Box>
       </Container>
+      <Snackbar 
+        open={openSnackbar} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+          {errorMessage}
+        </Alert>
+      </Snackbar>
     </ThemeProvider>
   );
 }

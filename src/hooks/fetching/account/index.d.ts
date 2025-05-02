@@ -8,7 +8,7 @@ export interface Account {
   username: string;
   email: string;
   thirdParty: ThirdParty[];
-  role: "admin" | "manager" | "member";
+  role: "admin" | "project_manager" | "security_expert" | "member";
   permission: string[];
   scanner: {
     endpoint?: string;
@@ -17,7 +17,7 @@ export interface Account {
 }
 export interface AccountUpdate {
   email: string;
-  role: "manager" | "member";
+  role: "admin" | "project_manager" | "security_expert" | "member";
   permission: string[];
 }
 export interface AccountRegister {
@@ -25,6 +25,7 @@ export interface AccountRegister {
   email: string;
   confirmPassword: string;
   password: string;
+  role?: "admin" | "project_manager" | "security_expert" | "member";
 }
 export interface ChangePassword {
   oldPassword: string;
