@@ -20,7 +20,17 @@ import {
   ListItemAvatar,
   Collapse,
   Tooltip,
-  Link
+  Link,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  Card,
+  CardContent,
+  CardActions,
+  Alert
 } from '@mui/material';
 import {
   ArrowBack,
@@ -35,21 +45,32 @@ import {
   Dangerous,
   Shield,
   ExpandMore,
-  ExpandLess
+  ExpandLess,
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Close as CloseIcon,
+  Save as SaveIcon
 } from '@mui/icons-material';
 import { getThreat, getDetailedThreatInfo, getSuggestedFixes } from '~/hooks/fetching/threat/axios';
+import { getMitigationsForThreat, createMitigation, updateMitigation, deleteMitigation } from '~/hooks/fetching/mitigation/axios';
 import { Threat } from '~/hooks/fetching/threat';
+import { Mitigation } from '~/hooks/fetching/mitigation';
 import { useTheme } from '@mui/material/styles';
 import { 
   ThreatPageHeader, 
   SuggestFixCard,
-  SuggestedFixesDialog
+  SuggestedFixesDialog,
+  MitigationForm
 } from '~/components/threat/ThreatDetailComponents';
+import { useAccountContext, useUserRole } from '~/hooks/general';
+import { useSnackbar } from 'notistack';
 
 export default function ThreatDetail() {
   const { threatId } = useParams();
   const theme = useTheme();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const [threat, setThreat] = useState<Threat | null>(null);
   const [detailedInfo, setDetailedInfo] = useState<any>(null);
   const [suggestedFixes, setSuggestedFixes] = useState<any>(null);
@@ -57,11 +78,29 @@ export default function ThreatDetail() {
   const [error, setError] = useState<Error | null>(null);
   const [openFixDialog, setOpenFixDialog] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  
+  // Mitigation management
+  const [mitigations, setMitigations] = useState<Mitigation[]>([]);
+  const [isLoadingMitigations, setIsLoadingMitigations] = useState(false);
+  const [openNewMitigationDialog, setOpenNewMitigationDialog] = useState(false);
+  const [openEditMitigationDialog, setOpenEditMitigationDialog] = useState(false);
+  const [currentMitigation, setCurrentMitigation] = useState<Mitigation | null>(null);
+  
+  // Authentication
+  const isManager = useUserRole() === "manager";
 
   // Fetch basic threat info and detailed info on page load
   useEffect(() => {
     const fetchThreatData = async () => {
       try {
+        // Add logging to help debug when and with what value this hook is being called
+        console.log(`fetchThreatData called with threatId: ${threatId}, type: ${typeof threatId}`);
+        
+        if (!threatId) {
+          console.log('Cannot fetch threat data: threatId is undefined or null');
+          return; // Don't proceed with API calls if threatId is undefined
+        }
+        
         setIsLoading(true);
         // Get basic threat info
         const threatResponse = await getThreat(threatId);
@@ -73,6 +112,7 @@ export default function ThreatDetail() {
         
         setError(null);
       } catch (err) {
+        console.error(`Error in fetchThreatData: ${err instanceof Error ? err.message : String(err)}`);
         setError(err as Error);
       } finally {
         setIsLoading(false);
@@ -81,6 +121,101 @@ export default function ThreatDetail() {
 
     fetchThreatData();
   }, [threatId]);
+
+  // Fetch mitigations for this threat when component loads
+  useEffect(() => {
+    // Only fetch mitigations if we have a valid threatId string and the user is a manager
+    if (threatId) {
+      console.log(`About to fetch mitigations for threatId: ${threatId}`);
+      fetchMitigations();
+    }
+  }, [threatId]);
+
+  // Fetch mitigations for the current threat
+  const fetchMitigations = async () => {
+    if (!threatId || typeof threatId !== 'string') {
+      console.log('Cannot fetch mitigations: Invalid or missing threatId');
+      return;
+    }
+    
+    try {
+      setIsLoadingMitigations(true);
+      const response = await getMitigationsForThreat(threatId);
+      setMitigations(response.data || []);
+    } catch (error) {
+      console.error('Error fetching mitigations:', error);
+      enqueueSnackbar('Failed to load mitigations', { variant: 'error' });
+    } finally {
+      setIsLoadingMitigations(false);
+    }
+  };
+
+  // Handle creating a new mitigation
+  const handleCreateMitigation = async (formData: { title: string; description: string; implementation: string }) => {
+    if (!threatId) return;
+    
+    try {
+      const response = await createMitigation({
+        ...formData,
+        threatId
+      });
+      
+      // Handle response structure properly and add proper type checking
+      const mitigation = response?.data?.mitigation || response?.data;
+      
+      if (mitigation && ('title' in mitigation)) {
+        setMitigations(prev => [...prev, mitigation]);
+        setOpenNewMitigationDialog(false);
+        enqueueSnackbar('Mitigation created successfully', { variant: 'success' });
+      } else {
+        console.error('Invalid response format:', response);
+        enqueueSnackbar('Invalid response from server', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error creating mitigation:', error);
+      enqueueSnackbar('Failed to create mitigation', { variant: 'error' });
+    }
+  };
+
+  // Handle updating an existing mitigation
+  const handleUpdateMitigation = async (formData: { title: string; description: string; implementation: string }) => {
+    if (!currentMitigation) return;
+    
+    try {
+      const response = await updateMitigation(currentMitigation._id, formData);
+      
+      // Fix: The response structure comes directly in data property, not in data.mitigation
+      const updatedMitigation = response.data;
+      
+      setMitigations(prev => 
+        prev.map(m => m._id === currentMitigation._id ? { ...updatedMitigation } as Mitigation : m)
+      );
+      setOpenEditMitigationDialog(false);
+      enqueueSnackbar('Mitigation updated successfully', { variant: 'success' });
+    } catch (error) {
+      console.error('Error updating mitigation:', error);
+      enqueueSnackbar('Failed to update mitigation', { variant: 'error' });
+    }
+  };
+
+  // Handle deleting a mitigation
+  const handleDeleteMitigation = async (mitigationId: string) => {
+    if (!threatId) return;
+    
+    if (!window.confirm('Are you sure you want to delete this mitigation? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      await deleteMitigation(mitigationId, threatId);
+      
+      setMitigations(prev => prev.filter(m => m._id !== mitigationId));
+      enqueueSnackbar('Mitigation deleted successfully', { variant: 'success' });
+    } catch (error) {
+      console.error('Error deleting mitigation:', error);
+      enqueueSnackbar('Failed to delete mitigation', { variant: 'error' });
+    }
+  };
 
   // Function to handle getting suggested fixes
   const handleGetSuggestedFixes = async () => {
@@ -398,6 +533,125 @@ export default function ThreatDetail() {
                   </Typography>
                 )}
               </Paper>
+
+              {/* Section 3: Mitigations (only visible for managers) */}
+              {isManager && (
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    p: 3, 
+                    mb: 3,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 2,
+                    background: `${alpha(theme.palette.background.paper, 0.8)}`,
+                    backdropFilter: 'blur(20px)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: `0px 4px 20px ${alpha(theme.palette.success.main, 0.1)}`,
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Avatar sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main, mr: 2 }}>
+                        <Shield />
+                      </Avatar>
+                      <Typography variant="h6" fontWeight="bold">
+                        Mitigations
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        setCurrentMitigation(null);
+                        setOpenNewMitigationDialog(true);
+                      }}
+                      size="small"
+                    >
+                      Add Mitigation
+                    </Button>
+                  </Box>
+                  
+                  {isLoadingMitigations ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                      <CircularProgress size={30} />
+                    </Box>
+                  ) : mitigations.length > 0 ? (
+                    <Grid container spacing={2}>
+                      {mitigations.map((mitigation) => (
+                        <Grid item xs={12} key={mitigation._id}>
+                          <Card 
+                            sx={{ 
+                              border: `1px solid ${theme.palette.divider}`,
+                              boxShadow: 'none',
+                              '&:hover': {
+                                boxShadow: `0px 4px 20px ${alpha(theme.palette.primary.main, 0.1)}`,
+                              }
+                            }}
+                          >
+                            <CardContent>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Typography variant="h6" gutterBottom>
+                                  {mitigation.title}
+                                </Typography>
+                                <Box>
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={() => {
+                                      setCurrentMitigation(mitigation);
+                                      setOpenEditMitigationDialog(true);
+                                    }}
+                                  >
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                  <IconButton 
+                                    size="small" 
+                                    color="error"
+                                    onClick={() => handleDeleteMitigation(mitigation._id)}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Box>
+                              </Box>
+                              <Typography variant="body2" color="text.secondary" paragraph>
+                                {mitigation.description}
+                              </Typography>
+                              <Typography variant="subtitle2" sx={{ mt: 1 }}>
+                                Implementation:
+                              </Typography>
+                              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                {mitigation.createdBy && typeof mitigation.createdBy === 'object' && mitigation.createdBy.name ? (
+                                  <Typography variant="caption" color="text.secondary">
+                                    Created by: {mitigation.createdBy.name}
+                                  </Typography>
+                                ) : (
+                                  <Typography variant="caption" color="text.secondary">
+                                    Created: {new Date(mitigation.createdAt).toLocaleDateString()}
+                                  </Typography>
+                                )}
+                                <Typography variant="caption" color="text.secondary">
+                                  Last updated: {new Date(mitigation.updatedAt).toLocaleDateString()}
+                                </Typography>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  ) : (
+                    <Box sx={{ p: 3, textAlign: 'center', bgcolor: alpha(theme.palette.info.main, 0.05), borderRadius: 2 }}>
+                      <Typography variant="body1" color="text.secondary">
+                        No mitigations have been added yet. 
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        Click "Add Mitigation" to create the first mitigation strategy for this threat.
+                      </Typography>
+                    </Box>
+                  )}
+                </Paper>
+              )}
 
               {/* Section 4: DREAD Score Components */}
               <Paper 
@@ -811,7 +1065,47 @@ export default function ThreatDetail() {
           open={openFixDialog}
           onClose={() => setOpenFixDialog(false)}
           suggestedFixes={suggestedFixes}
+          userMitigations={mitigations}
         />
+
+        {/* New Mitigation Dialog */}
+        <Dialog open={openNewMitigationDialog} onClose={() => setOpenNewMitigationDialog(false)} maxWidth="md" fullWidth>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6">Add New Mitigation</Typography>
+              <IconButton onClick={() => setOpenNewMitigationDialog(false)} size="small">
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <MitigationForm 
+              onSubmit={handleCreateMitigation} 
+              onCancel={() => setOpenNewMitigationDialog(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Mitigation Dialog */}
+        <Dialog open={openEditMitigationDialog} onClose={() => setOpenEditMitigationDialog(false)} maxWidth="md" fullWidth>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6">Edit Mitigation</Typography>
+              <IconButton onClick={() => setOpenEditMitigationDialog(false)} size="small">
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            {currentMitigation && (
+              <MitigationForm 
+                initialData={currentMitigation}
+                onSubmit={handleUpdateMitigation} 
+                onCancel={() => setOpenEditMitigationDialog(false)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </Box>
     </Fade>
   );
