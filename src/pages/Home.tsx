@@ -1,7 +1,7 @@
 import { useUserRole } from "~/hooks/general";
 import MemberHomePage from "./MemberHomePage";
 import AdminHomePage from "./AdminHomePage";
-import ProjectManagerHomePage from "./ProjectManagerHomePage";
+import ManagerHomePage from "./ManagerHomePage";
 import SecurityExpertHomePage from "./SecurityExpertHomePage";
 
 export default function Home() {
@@ -9,7 +9,7 @@ export default function Home() {
   
   switch (role) {
     case "project_manager":
-      return <ProjectManagerHomePage />;
+      return <ManagerHomePage />;
     case "security_expert":
       return <SecurityExpertHomePage />;
     case "member":

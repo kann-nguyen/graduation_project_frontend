@@ -1,44 +1,454 @@
-import { Box, Container, Grid, Toolbar } from "@mui/material";
+import React from 'react';
+import { 
+  Box, 
+  Container, 
+  Grid, 
+  Toolbar, 
+  Paper, 
+  Typography,
+  useTheme,
+  alpha,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Avatar,
+  Chip,
+  Divider
+} from "@mui/material";
+import { 
+  Dashboard, 
+  Business, 
+  CalendarToday, 
+  AccessTime,
+  Timeline
+} from "@mui/icons-material";
 import { useParams } from "react-router-dom";
-import MemberCard from "~/components/cards/MemberCard";
-import ProjectInfo from "~/components/cards/ProjectInfoCard";
-import TotalCommits from "~/components/cards/TotalCommitsCard";
-import TotalPullRequests from "~/components/cards/TotalPullCard";
 import Chart from "~/components/charts/ActivityHistoryChart";
 import { useActivityHistoryQuery } from "~/hooks/fetching/history/query";
+import { useProjectInfoQuery } from "~/hooks/fetching/project/query";
+import { useTasksQuery } from "~/hooks/fetching/task/query";
+import { useTicketsQuery } from "~/hooks/fetching/ticket/query";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+// Extend dayjs with relative time
+dayjs.extend(relativeTime);
 
 export default function ManagerHomePage() {
   const { currentProject } = useParams();
   const actHistQuery = useActivityHistoryQuery(currentProject);
   const actHist = actHistQuery.data?.data;
+  const projectInfoQuery = useProjectInfoQuery(currentProject);
+  const projectInfo = projectInfoQuery.data?.data;
+  const tasksQuery = useTasksQuery(currentProject || '');
+  const tasks = tasksQuery.data?.data || [];
+  const ticketsQuery = useTicketsQuery(currentProject || '');
+  const tickets = ticketsQuery.data?.data || [];
+  const theme = useTheme();
+  
   if (!actHist) return <></>;
+  
+  // Get stats from activity history
   const commits = actHist.filter((x) => x.action === "commit");
   const pullRequests = actHist.filter((x) => x.action === "pr");
+  
+  // Calculate task statistics
+  const activeTasks = tasks.filter(task => task.status === "active").length;
+  const completedTasks = tasks.filter(task => task.status === "completed").length;
+  const totalTasks = tasks.length;
+  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  
+  // Calculate ticket statistics
+  const notAcceptedTickets = tickets.filter(t => t.status === "Not accepted").length;
+  const processingTickets = tickets.filter(t => t.status === "Processing").length;
+  const submittedTickets = tickets.filter(t => t.status === "Submitted").length;
+  const resolvedTickets = tickets.filter(t => t.status === "Resolved").length;
+  const totalTickets = tickets.length;
+  const ticketResolutionRate = totalTickets > 0 ? Math.round((resolvedTickets / totalTickets) * 100) : 0;
+  
   return (
-    <Box sx={{ flexGrow: 1, height: "100vh", width: "100%", overflow: "auto" }}>
+    <Box sx={{ 
+      flexGrow: 1, 
+      minHeight: "100vh", 
+      width: "100%", 
+      overflow: "auto",
+      bgcolor: theme.palette.mode === 'dark' ? 'background.default' : alpha(theme.palette.primary.light, 0.04),
+    }}>
       <Toolbar />
-      <Container sx={{ my: 4, width: '100%' }} maxWidth={false}>
-        <Grid container spacing={2}>
-          <Grid container item spacing={2} xs={12} sm={12} md={6}>
+      <Container sx={{ py: 3 }} maxWidth="xl">
+        {/* Page Header */}
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 3, 
+            mb: 4, 
+            borderRadius: 2, 
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <Box 
+            sx={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: { xs: 80, md: 150 },
+              height: '100%',
+              opacity: 0.05,
+              display: { xs: 'none', md: 'block' }
+            }}
+          >
+            <Dashboard sx={{ fontSize: 180, position: 'absolute', top: '50%', right: -20, transform: 'translateY(-50%)' }} />
+          </Box>
+          
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} md={7}>
+                <Box>
+                  <Typography variant="h4" fontWeight="bold">
+                    {projectInfo?.name || "Project Dashboard"}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
+                    Manager Dashboard
+                  </Typography>
+                  
+                  {projectInfo && (
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      mt: 1, 
+                      gap: 3,
+                      flexWrap: 'wrap'
+                    }}>
+                      {projectInfo.url && (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Business sx={{ color: alpha(theme.palette.primary.main, 0.7), mr: 1, fontSize: '1.2rem' }} />
+                          <Typography variant="body2" color="text.secondary">
+                            Project URL: <a href={projectInfo.url} target="_blank" rel="noopener noreferrer" 
+                              style={{ color: theme.palette.primary.main, textDecoration: 'none' }}>
+                              Repository
+                            </a>
+                          </Typography>
+                        </Box>
+                      )}
+                      
+                      {projectInfo.createdAt && (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <CalendarToday sx={{ color: alpha(theme.palette.primary.main, 0.7), mr: 1, fontSize: '1.2rem' }} />
+                          <Typography variant="body2" color="text.secondary">
+                            Created at: {dayjs(projectInfo.createdAt).format('MMM DD, YYYY')}
+                          </Typography>
+                        </Box>
+                      )}
+                      
+                      {projectInfo.updatedAt && (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <CalendarToday sx={{ color: alpha(theme.palette.primary.main, 0.7), mr: 1, fontSize: '1.2rem' }} />
+                          <Typography variant="body2" color="text.secondary">
+                            Updated at: {dayjs(projectInfo.updatedAt).format('MMM DD, YYYY')}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} md={5}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: { xs: 'column', sm: 'row' }, 
+                  gap: 2,
+                  justifyContent: 'flex-end'
+                }}>
+                  <Paper elevation={0} sx={{ 
+                    p: 2, 
+                    borderRadius: 2, 
+                    flex: 1,
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+                  }}>
+                    <Typography variant="body2" color="text.secondary">Total Commits</Typography>
+                    <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.primary.main, my: 0.5 }}>
+                      {commits.length}
+                    </Typography>
+                  </Paper>
+                  
+                  <Paper elevation={0} sx={{ 
+                    p: 2, 
+                    borderRadius: 2, 
+                    flex: 1,
+                    bgcolor: alpha(theme.palette.info.main, 0.05),
+                    border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`
+                  }}>
+                    <Typography variant="body2" color="text.secondary">Pull Requests</Typography>
+                    <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.info.main, my: 0.5 }}>
+                      {pullRequests.length}
+                    </Typography>
+                  </Paper>
+                </Box>
+              </Grid>
+            </Grid>
+          </Box>
+        </Paper>
+
+        {/* Project Overview - Full Width Task Statistics */}
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 3, 
+            mb: 4, 
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper'
+          }}
+        >
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Task Statistics
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={12} sm={6}>
-              <TotalCommits total={commits.length} />
+              <Paper elevation={0} sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.primary.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+              }}>
+                <Typography variant="body2" color="text.secondary">Active Tasks</Typography>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.primary.main }}>
+                  {activeTasks}
+                </Typography>
+              </Paper>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TotalPullRequests total={pullRequests.length} />
-            </Grid>
-            <Grid item xs={12}>
-              <MemberCard />
+              <Paper elevation={0} sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.success.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`
+              }}>
+                <Typography variant="body2" color="text.secondary">Completed Tasks</Typography>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.success.main }}>
+                  {completedTasks}
+                </Typography>
+              </Paper>
             </Grid>
           </Grid>
-          <Grid container item spacing={2} xs={12} sm={12} md={6}>
-            <Grid item xs={12}>
-              <ProjectInfo />
+          <Box sx={{ mt: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2" color="text.secondary">Completion Progress</Typography>
+              <Typography variant="body2" fontWeight="medium">{taskCompletionRate}%</Typography>
+            </Box>
+            <LinearProgress 
+              variant="determinate" 
+              value={taskCompletionRate} 
+              sx={{ 
+                height: 8, 
+                borderRadius: 4,
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: theme.palette.primary.main
+                }
+              }}
+            />
+          </Box>
+        </Paper>
+              
+        {/* Full Width Ticket Statistics */}
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 3, 
+            mb: 4, 
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper'
+          }}
+        >
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Ticket Statistics
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={6} sm={3}>
+              <Paper elevation={0} sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.grey[500], 0.05),
+                border: `1px solid ${alpha(theme.palette.grey[500], 0.1)}`
+              }}>
+                <Typography variant="body2" color="text.secondary" noWrap>Not Accepted</Typography>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.grey[600] }}>
+                  {notAcceptedTickets}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Paper elevation={0} sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.warning.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`
+              }}>
+                <Typography variant="body2" color="text.secondary" noWrap>Processing</Typography>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.warning.main }}>
+                  {processingTickets}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Paper elevation={0} sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.info.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`
+              }}>
+                <Typography variant="body2" color="text.secondary" noWrap>Submitted</Typography>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.info.main }}>
+                  {submittedTickets}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Paper elevation={0} sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.success.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`
+              }}>
+                <Typography variant="body2" color="text.secondary" noWrap>Resolved</Typography>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.success.main }}>
+                  {resolvedTickets}
+                </Typography>
+              </Paper>
             </Grid>
           </Grid>
-          <Grid item xs={12}>
-            <Chart activityHistory={actHist} />
-          </Grid>
-        </Grid>
+          <Box sx={{ mt: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2" color="text.secondary">Resolution Progress</Typography>
+              <Typography variant="body2" fontWeight="medium">{ticketResolutionRate}%</Typography>
+            </Box>
+            <LinearProgress 
+              variant="determinate" 
+              value={ticketResolutionRate} 
+              sx={{ 
+                height: 8, 
+                borderRadius: 4,
+                bgcolor: alpha(theme.palette.error.main, 0.1),
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: theme.palette.success.main
+                }
+              }}
+            />
+          </Box>
+        </Paper>
+
+        {/* Recent Activity */}
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            borderRadius: 2, 
+            mb: 4,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper',
+            p: 3
+          }}
+        >
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Recent Activity
+          </Typography>
+          
+          {(actHist && actHist.length > 0) ? (
+            <List disablePadding>
+              {actHist.slice(0, 5).map((activity, index) => (
+                <React.Fragment key={activity._id || index}>
+                  <ListItem
+                    sx={{ 
+                      px: 2, 
+                      py: 1.5, 
+                      borderRadius: 2,
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.05)
+                      }
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{
+                          bgcolor: alpha(theme.palette.info.main, 0.1),
+                          color: theme.palette.info.main
+                        }}
+                      >
+                        <Timeline />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body1" fontWeight="medium">
+                          {activity.content}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            by {activity.createdBy}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                            <AccessTime fontSize="inherit" sx={{ verticalAlign: 'text-bottom', mr: 0.5 }} />
+                            {activity.createdAt ? dayjs(activity.createdAt).fromNow() : 'Date unknown'}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                    <Chip
+                      label={activity.action === "commit" ? "Commit" : "Pull Request"}
+                      size="small"
+                      sx={{
+                        bgcolor: alpha(activity.action === "commit" ? theme.palette.primary.main : theme.palette.info.main, 0.1),
+                        color: activity.action === "commit" ? theme.palette.primary.main : theme.palette.info.main,
+                        fontWeight: 'medium'
+                      }}
+                    />
+                  </ListItem>
+                  {index < Math.min(actHist.length, 5) - 1 && <Divider sx={{ my: 0.5 }} />}
+                </React.Fragment>
+              ))}
+            </List>
+          ) : (
+            <Box sx={{ 
+              py: 4, 
+              textAlign: 'center',
+              bgcolor: alpha(theme.palette.primary.main, 0.03),
+              borderRadius: 2,
+              border: `1px dashed ${alpha(theme.palette.primary.main, 0.2)}`,
+            }}>
+              <Timeline sx={{ fontSize: 40, color: alpha(theme.palette.primary.main, 0.3), mb: 1 }} />
+              <Typography variant="body1" color="text.secondary">
+                No recent activity to display
+              </Typography>
+            </Box>
+          )}
+        </Paper>
+        
+        {/* Activity History Chart */}
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            borderRadius: 2, 
+            mb: 4,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper',
+            p: 3
+          }}
+        >
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Activity History
+          </Typography>
+          <Chart activityHistory={actHist} />
+        </Paper>
       </Container>
     </Box>
   );

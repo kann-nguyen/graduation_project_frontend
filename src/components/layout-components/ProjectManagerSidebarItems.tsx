@@ -7,6 +7,7 @@ import {
   FactCheckOutlined,
   HomeOutlined,
   SecurityOutlined,
+  PeopleOutlined,
 } from "@mui/icons-material";
 
 export default function ManagerSidebarItems() {
@@ -20,10 +21,12 @@ export default function ManagerSidebarItems() {
   const encodedUrl = encodeURIComponent(currentProject);
   return (
     <List component="nav">
-      <ListSubheader component="div" inset>
-        Project navigation
-      </ListSubheader>
       <Item text="Home" icon={<HomeOutlined />} path={`/${encodedUrl}/`} />
+      <Item
+        text="Member"
+        icon={<PeopleOutlined />}
+        path={`/${encodedUrl}/members`}
+      />
       <Item
         text="Phase"
         icon={<AssessmentOutlined />}
@@ -33,15 +36,6 @@ export default function ManagerSidebarItems() {
         text="Ticket"
         icon={<FactCheckOutlined />}
         path={`/${encodedUrl}/tickets`}
-      />
-      <Divider />
-      <ListSubheader component="div" inset>
-        Vulnerability control
-      </ListSubheader>
-      <Item
-        text="Vulnerabilities"
-        icon={<SecurityOutlined />}
-        path={`/${encodedUrl}/vulnerabilities`}
       />
     </List>
   );
