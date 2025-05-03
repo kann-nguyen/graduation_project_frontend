@@ -1,10 +1,10 @@
 import React from 'react';
-import { 
-  Box, 
-  Container, 
-  Grid, 
-  Toolbar, 
-  Paper, 
+import {
+  Box,
+  Container,
+  Grid,
+  Toolbar,
+  Paper,
   Typography,
   useTheme,
   alpha,
@@ -17,10 +17,10 @@ import {
   Chip,
   Divider
 } from "@mui/material";
-import { 
-  Dashboard, 
-  Business, 
-  CalendarToday, 
+import {
+  Dashboard,
+  Business,
+  CalendarToday,
   AccessTime,
   Timeline
 } from "@mui/icons-material";
@@ -32,6 +32,7 @@ import { useTasksQuery } from "~/hooks/fetching/task/query";
 import { useTicketsQuery } from "~/hooks/fetching/ticket/query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { useUserByAccountIdQuery } from '~/hooks/fetching/user/query';
 
 // Extend dayjs with relative time
 dayjs.extend(relativeTime);
@@ -47,19 +48,37 @@ export default function ManagerHomePage() {
   const ticketsQuery = useTicketsQuery(currentProject || '');
   const tickets = ticketsQuery.data?.data || [];
   const theme = useTheme();
-  
+  const userQuery = useUserByAccountIdQuery();
+  const user = userQuery.data?.data;
+
+  // If data is not loaded yet
+  if (!user) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh'
+        }}
+      >
+        <Typography>Loading dashboard...</Typography>
+      </Box>
+    );
+  }
+
   if (!actHist) return <></>;
-  
+
   // Get stats from activity history
   const commits = actHist.filter((x) => x.action === "commit");
   const pullRequests = actHist.filter((x) => x.action === "pr");
-  
+
   // Calculate task statistics
   const activeTasks = tasks.filter(task => task.status === "active").length;
   const completedTasks = tasks.filter(task => task.status === "completed").length;
   const totalTasks = tasks.length;
   const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  
+
   // Calculate ticket statistics
   const notAcceptedTickets = tickets.filter(t => t.status === "Not accepted").length;
   const processingTickets = tickets.filter(t => t.status === "Processing").length;
@@ -67,31 +86,31 @@ export default function ManagerHomePage() {
   const resolvedTickets = tickets.filter(t => t.status === "Resolved").length;
   const totalTickets = tickets.length;
   const ticketResolutionRate = totalTickets > 0 ? Math.round((resolvedTickets / totalTickets) * 100) : 0;
-  
+
   return (
-    <Box sx={{ 
-      flexGrow: 1, 
-      minHeight: "100vh", 
-      width: "100%", 
+    <Box sx={{
+      flexGrow: 1,
+      minHeight: "100vh",
+      width: "100%",
       overflow: "auto",
       bgcolor: theme.palette.mode === 'dark' ? 'background.default' : alpha(theme.palette.primary.light, 0.04),
     }}>
       <Toolbar />
       <Container sx={{ py: 3 }} maxWidth="xl">
         {/* Page Header */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 3, 
-            mb: 4, 
-            borderRadius: 2, 
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 4,
+            borderRadius: 2,
             border: `1px solid ${theme.palette.divider}`,
             bgcolor: 'background.paper',
             position: 'relative',
             overflow: 'hidden'
           }}
         >
-          <Box 
+          <Box
             sx={{
               position: 'absolute',
               top: 0,
@@ -104,7 +123,7 @@ export default function ManagerHomePage() {
           >
             <Dashboard sx={{ fontSize: 180, position: 'absolute', top: '50%', right: -20, transform: 'translateY(-50%)' }} />
           </Box>
-          
+
           <Box sx={{ position: 'relative', zIndex: 1 }}>
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} md={7}>
@@ -113,14 +132,14 @@ export default function ManagerHomePage() {
                     {projectInfo?.name || "Project Dashboard"}
                   </Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-                    Manager Dashboard
+                    Welcome back, {user.name}!
                   </Typography>
-                  
+
                   {projectInfo && (
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      mt: 1, 
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      mt: 1,
                       gap: 3,
                       flexWrap: 'wrap'
                     }}>
@@ -128,14 +147,14 @@ export default function ManagerHomePage() {
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Business sx={{ color: alpha(theme.palette.primary.main, 0.7), mr: 1, fontSize: '1.2rem' }} />
                           <Typography variant="body2" color="text.secondary">
-                            Project URL: <a href={projectInfo.url} target="_blank" rel="noopener noreferrer" 
+                            Project URL: <a href={projectInfo.url} target="_blank" rel="noopener noreferrer"
                               style={{ color: theme.palette.primary.main, textDecoration: 'none' }}>
                               Repository
                             </a>
                           </Typography>
                         </Box>
                       )}
-                      
+
                       {projectInfo.createdAt && (
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <CalendarToday sx={{ color: alpha(theme.palette.primary.main, 0.7), mr: 1, fontSize: '1.2rem' }} />
@@ -144,7 +163,7 @@ export default function ManagerHomePage() {
                           </Typography>
                         </Box>
                       )}
-                      
+
                       {projectInfo.updatedAt && (
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <CalendarToday sx={{ color: alpha(theme.palette.primary.main, 0.7), mr: 1, fontSize: '1.2rem' }} />
@@ -157,17 +176,17 @@ export default function ManagerHomePage() {
                   )}
                 </Box>
               </Grid>
-              
+
               <Grid item xs={12} md={5}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: { xs: 'column', sm: 'row' }, 
+                <Box sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
                   gap: 2,
                   justifyContent: 'flex-end'
                 }}>
-                  <Paper elevation={0} sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
+                  <Paper elevation={0} sx={{
+                    p: 2,
+                    borderRadius: 2,
                     flex: 1,
                     bgcolor: alpha(theme.palette.primary.main, 0.05),
                     border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
@@ -177,10 +196,10 @@ export default function ManagerHomePage() {
                       {commits.length}
                     </Typography>
                   </Paper>
-                  
-                  <Paper elevation={0} sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
+
+                  <Paper elevation={0} sx={{
+                    p: 2,
+                    borderRadius: 2,
                     flex: 1,
                     bgcolor: alpha(theme.palette.info.main, 0.05),
                     border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`
@@ -197,11 +216,11 @@ export default function ManagerHomePage() {
         </Paper>
 
         {/* Project Overview - Full Width Task Statistics */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 3, 
-            mb: 4, 
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 4,
             borderRadius: 2,
             border: `1px solid ${theme.palette.divider}`,
             bgcolor: 'background.paper'
@@ -212,8 +231,8 @@ export default function ManagerHomePage() {
           </Typography>
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={12} sm={6}>
-              <Paper elevation={0} sx={{ 
-                p: 2, 
+              <Paper elevation={0} sx={{
+                p: 2,
                 borderRadius: 2,
                 bgcolor: alpha(theme.palette.primary.main, 0.05),
                 border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
@@ -225,8 +244,8 @@ export default function ManagerHomePage() {
               </Paper>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Paper elevation={0} sx={{ 
-                p: 2, 
+              <Paper elevation={0} sx={{
+                p: 2,
                 borderRadius: 2,
                 bgcolor: alpha(theme.palette.success.main, 0.05),
                 border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`
@@ -243,11 +262,11 @@ export default function ManagerHomePage() {
               <Typography variant="body2" color="text.secondary">Completion Progress</Typography>
               <Typography variant="body2" fontWeight="medium">{taskCompletionRate}%</Typography>
             </Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={taskCompletionRate} 
-              sx={{ 
-                height: 8, 
+            <LinearProgress
+              variant="determinate"
+              value={taskCompletionRate}
+              sx={{
+                height: 8,
                 borderRadius: 4,
                 bgcolor: alpha(theme.palette.primary.main, 0.1),
                 '& .MuiLinearProgress-bar': {
@@ -257,13 +276,13 @@ export default function ManagerHomePage() {
             />
           </Box>
         </Paper>
-              
+
         {/* Full Width Ticket Statistics */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 3, 
-            mb: 4, 
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 4,
             borderRadius: 2,
             border: `1px solid ${theme.palette.divider}`,
             bgcolor: 'background.paper'
@@ -274,8 +293,8 @@ export default function ManagerHomePage() {
           </Typography>
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={6} sm={3}>
-              <Paper elevation={0} sx={{ 
-                p: 2, 
+              <Paper elevation={0} sx={{
+                p: 2,
                 borderRadius: 2,
                 bgcolor: alpha(theme.palette.grey[500], 0.05),
                 border: `1px solid ${alpha(theme.palette.grey[500], 0.1)}`
@@ -287,8 +306,8 @@ export default function ManagerHomePage() {
               </Paper>
             </Grid>
             <Grid item xs={6} sm={3}>
-              <Paper elevation={0} sx={{ 
-                p: 2, 
+              <Paper elevation={0} sx={{
+                p: 2,
                 borderRadius: 2,
                 bgcolor: alpha(theme.palette.warning.main, 0.05),
                 border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`
@@ -300,8 +319,8 @@ export default function ManagerHomePage() {
               </Paper>
             </Grid>
             <Grid item xs={6} sm={3}>
-              <Paper elevation={0} sx={{ 
-                p: 2, 
+              <Paper elevation={0} sx={{
+                p: 2,
                 borderRadius: 2,
                 bgcolor: alpha(theme.palette.info.main, 0.05),
                 border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`
@@ -313,8 +332,8 @@ export default function ManagerHomePage() {
               </Paper>
             </Grid>
             <Grid item xs={6} sm={3}>
-              <Paper elevation={0} sx={{ 
-                p: 2, 
+              <Paper elevation={0} sx={{
+                p: 2,
                 borderRadius: 2,
                 bgcolor: alpha(theme.palette.success.main, 0.05),
                 border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`
@@ -331,11 +350,11 @@ export default function ManagerHomePage() {
               <Typography variant="body2" color="text.secondary">Resolution Progress</Typography>
               <Typography variant="body2" fontWeight="medium">{ticketResolutionRate}%</Typography>
             </Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={ticketResolutionRate} 
-              sx={{ 
-                height: 8, 
+            <LinearProgress
+              variant="determinate"
+              value={ticketResolutionRate}
+              sx={{
+                height: 8,
                 borderRadius: 4,
                 bgcolor: alpha(theme.palette.error.main, 0.1),
                 '& .MuiLinearProgress-bar': {
@@ -347,10 +366,10 @@ export default function ManagerHomePage() {
         </Paper>
 
         {/* Recent Activity */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            borderRadius: 2, 
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 2,
             mb: 4,
             border: `1px solid ${theme.palette.divider}`,
             bgcolor: 'background.paper',
@@ -360,15 +379,15 @@ export default function ManagerHomePage() {
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             Recent Activity
           </Typography>
-          
+
           {(actHist && actHist.length > 0) ? (
             <List disablePadding>
               {actHist.slice(0, 5).map((activity, index) => (
                 <React.Fragment key={activity._id || index}>
                   <ListItem
-                    sx={{ 
-                      px: 2, 
-                      py: 1.5, 
+                    sx={{
+                      px: 2,
+                      py: 1.5,
                       borderRadius: 2,
                       '&:hover': {
                         bgcolor: alpha(theme.palette.primary.main, 0.05)
@@ -418,8 +437,8 @@ export default function ManagerHomePage() {
               ))}
             </List>
           ) : (
-            <Box sx={{ 
-              py: 4, 
+            <Box sx={{
+              py: 4,
               textAlign: 'center',
               bgcolor: alpha(theme.palette.primary.main, 0.03),
               borderRadius: 2,
@@ -432,12 +451,12 @@ export default function ManagerHomePage() {
             </Box>
           )}
         </Paper>
-        
+
         {/* Activity History Chart */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            borderRadius: 2, 
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 2,
             mb: 4,
             border: `1px solid ${theme.palette.divider}`,
             bgcolor: 'background.paper',

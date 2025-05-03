@@ -99,13 +99,7 @@ export const ThreatPageHeader = ({
   const ticketId = getTicketId();
   
   const handleBackClick = () => {
-    if (ticketId) {
-      // Navigate back to the ticket details page if we have a ticketId
-      navigate(`/${encodeURIComponent(currentProject || '')}/tickets/${ticketId}`);
-    } else {
-      // Navigate to the threats list if no ticketId is available
-      navigate(`/${encodeURIComponent(currentProject || '')}/tickets`);
-    }
+    navigate(`/${encodeURIComponent(currentProject || '')}/threats`);
   };
   
   return (
@@ -119,7 +113,7 @@ export const ThreatPageHeader = ({
           color="primary"
           size="medium"
         >
-          {ticketId ? 'Back to ticket details' : 'Back to tickets list'}
+          {'Back to threats list'}
         </Button>
         
         <Box sx={{ flexGrow: 1 }} />

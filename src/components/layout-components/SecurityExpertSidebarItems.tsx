@@ -6,6 +6,8 @@ import {
   FactCheckOutlined,
   HomeOutlined,
   BugReportOutlined,
+  ShieldOutlined,
+  BugReport
 } from "@mui/icons-material";
 
 export default function SecurityExpertSidebarItems() {
@@ -19,16 +21,14 @@ export default function SecurityExpertSidebarItems() {
   const encodedUrl = encodeURIComponent(currentProject);
   return (
     <List component="nav">
-
       <Item text="Dashboard" icon={<HomeOutlined />} path={`/${encodedUrl}/`} />
       <Item 
-        text="Vulnerabilities" 
-        icon={<BugReportOutlined />} 
-        path={`/${encodedUrl}/vulnerabilities`} 
+        text="Threat" 
+        icon={<BugReport />} 
+        path={`/${encodedUrl}/threats`} 
       />
-
       <Item
-        text="Tickets"
+        text="Ticket"
         icon={<FactCheckOutlined />}
         path={`/${encodedUrl}/tickets`}
       />
