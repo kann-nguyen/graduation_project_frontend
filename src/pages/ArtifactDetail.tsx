@@ -1143,7 +1143,7 @@ function ArtifactInfoSection({ artifact, onEditClick }: { artifact: Artifact, on
   const [rateValue, setRateValue] = useState<number>(artifact.rateReScan || 50);
   const [isEditing, setIsEditing] = useState(false);
   const account = useAccountContext();
-  const isManager = account?.role === 'manager';
+  const isManager = account?.role === 'project_manager';
   
   const updateRateScanMutation = useUpdateArtifactRateScanMutation();
 

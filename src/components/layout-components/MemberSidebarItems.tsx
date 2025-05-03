@@ -3,6 +3,7 @@ import {
   FactCheckOutlined,
   HomeOutlined,
   SecurityOutlined,
+  DashboardOutlined,
 } from "@mui/icons-material";
 import { Divider, List, ListSubheader } from "@mui/material";
 import { useParams } from "react-router-dom";
@@ -30,6 +31,11 @@ export default function MemberSidebarItems() {
         icon={<AssignmentOutlined />}
         path={`/${encodedUrl}/tasks`}
       />
+      {/* <Item
+        text="Project"
+        icon={<DashboardOutlined />}
+        path={`/${encodedUrl}/project`}
+      /> */}
     </List>
   );
 }

@@ -31,6 +31,7 @@ const AdminAccountPage = lazy(() => import("./AdminAccountPage"));
 const AdminTemplatePage = lazy(() => import("./AdminTemplatePage"));
 const AdminToolPage = lazy(() => import("./AdminToolPage"));
 const FirstTimeLoginPage = lazy(() => import("./FirstTimeLoginPage"));
+const ProjectPage = lazy(() => import("./ProjectPage"));
 const Task = lazy(() => import("./Task"));
 const DashboardLayout = lazy(() => import("~/layouts/DashboardLayout"));
 const AccountInfo = lazy(() => import("./Account"));
@@ -86,6 +87,10 @@ const managerAndMemberRoutes: RouteObject = {
           element: <GlobalSuspense element={<TicketDetailPage />} />,
         },
       ],
+    },
+    {
+      path: "project",
+      element: <GlobalSuspense element={<ProjectPage />} />,
     },
     {
       path: "memberInfo",

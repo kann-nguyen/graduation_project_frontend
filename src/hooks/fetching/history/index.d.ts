@@ -1,4 +1,5 @@
 export interface ActivityHistory {
+  timestamp(timestamp: any): unknown;
   _id: string;
   id: string;
   action: "pr" | "commit";

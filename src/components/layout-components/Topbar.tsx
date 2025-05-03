@@ -93,7 +93,7 @@ export default function Topbar() {
               <MenuItem
                 key="add-project"
                 value="add-new-project"
-                disabled={role !== "manager"}
+                disabled={role !== "project_manager"}
               >
                 <Stack direction="row" alignItems="center">
                   <Add fontSize="small" />

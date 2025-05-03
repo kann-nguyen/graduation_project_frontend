@@ -187,7 +187,7 @@ export default function Integration() {
               </ListItemSecondaryAction>
             </ListItem>
             <Divider />
-            {role === "manager" && (
+            {role === "project_manager" && (
               <ListItem>
                 <ListItemIcon>
                   <BugReport />

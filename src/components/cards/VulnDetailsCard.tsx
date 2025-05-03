@@ -199,7 +199,7 @@ function ResolutionCollapse({
                         </>
                       }
                     />
-                    {userRole === "manager" &&
+                    {userRole === "project_manager" &&
                       members.includes(item.createdBy) && (
                         <Button
                           color="success"

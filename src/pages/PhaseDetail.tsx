@@ -40,7 +40,6 @@ export default function PhaseDetail() {
         overflow: 'hidden'
       }}
     >
-      <Toolbar />
       <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
         <Container sx={{ my: 4, pb: 4 }} maxWidth="xl">
           <Grid container spacing={2}>
@@ -61,13 +60,13 @@ export default function PhaseDetail() {
               />
             </Grid>
             <Grid item xs={12}>
-              <PhaseDetails phase={phase} />
-            </Grid>
-            <Grid item xs={12}>
               <ScannerDetails phase={phase} />
             </Grid>
             <Grid item xs={12}>
               <ArtifactDetails phase={phase} />
+            </Grid>
+            <Grid item xs={12}>
+              <PhaseDetails phase={phase} />
             </Grid>
           </Grid>
         </Container>
