@@ -17,9 +17,9 @@ export default function MemberHomePage() {
   if (!user) return <></>;
   const { taskAssigned, ticketAssigned } = user;
   return (
-    <Box sx={{ flexGrow: 1, height: "100vh" }}>
+    <Box sx={{ flexGrow: 1, height: "100vh", width: "100%", overflow: "auto" }}>
       <Toolbar />
-      <Container sx={{ my: 4, py: 4 }} maxWidth="xl">
+      <Container sx={{ my: 4, py: 4, width: '100%' }} maxWidth={false}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
             <RecentActivity

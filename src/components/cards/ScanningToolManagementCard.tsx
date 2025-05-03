@@ -59,7 +59,7 @@ export default function ScanningToolManagementCard({ sx }: { sx?: SxProps }) {
   const scanningToolsQuery = useGetScanners();
   const scanners = scanningToolsQuery.data?.data ?? [];
   return (
-    <Card sx={sx}>
+    <Card sx={{ width: '100%', display: 'flex', flexDirection: 'column', ...sx }}>
       <CardHeader 
         title="Scanning tool" 
         action={
@@ -71,11 +71,34 @@ export default function ScanningToolManagementCard({ sx }: { sx?: SxProps }) {
           </Button>
         }
       />
-      <CardContent>
+      <CardContent sx={{ 
+        width: '100%', 
+        padding: 2, 
+        flexGrow: 1,
+        '& .MuiDataGrid-root': {
+          border: 'none',
+          width: '100%'
+        }
+      }}>
         <DataGrid
           columns={columns}
           rows={scanners}
           getRowId={(row) => row._id}
+          autoHeight
+          disableColumnFilter
+          disableColumnSelector
+          disableDensitySelector
+          sx={{ 
+            width: '100%',
+            '& .MuiDataGrid-main': { width: '100%' },
+            '& .MuiDataGrid-virtualScroller': { width: '100%' },
+            '& .MuiDataGrid-columnsContainer': { width: '100%' },
+            '& .MuiDataGrid-cell': { maxWidth: 'none !important' },
+            '& .MuiDataGrid-row': { width: '100%' },
+            '& .MuiDataGrid-root': { width: '100%' },
+            '& .MuiDataGrid-footerContainer': { width: '100%' },
+            '& .MuiDataGrid-columnHeaders': { width: '100%' },
+          }}
         />
       </CardContent>
       <EditScannerDialog open={open} setOpen={setOpen} />

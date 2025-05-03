@@ -52,8 +52,9 @@ export default function AccountMgmtCard() {
       headerName: "Username",
       flex: 1,
       headerAlign: "center",
+      align: "center",
     },
-    { field: "email", headerName: "Email", flex: 1, headerAlign: "center" },
+    { field: "email", headerName: "Email", flex: 1, headerAlign: "center",align: "center", },
     {
       field: "role",
       headerName: "Role",
@@ -98,9 +99,17 @@ export default function AccountMgmtCard() {
     },
   ];
   return (
-    <Card>
+    <Card sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardHeader title="Account" />
-      <CardContent>
+      <CardContent sx={{ 
+        width: '100%', 
+        padding: 2, 
+        flexGrow: 1,
+        '& .MuiDataGrid-root': {
+          border: 'none',
+          width: '100%'
+        }
+      }}>
         <DataGrid
           columns={columns}
           rows={accounts}
@@ -109,6 +118,17 @@ export default function AccountMgmtCard() {
           disableColumnFilter
           disableColumnSelector
           disableDensitySelector
+          sx={{ 
+            width: '100%',
+            '& .MuiDataGrid-main': { width: '100%' },
+            '& .MuiDataGrid-virtualScroller': { width: '100%' },
+            '& .MuiDataGrid-columnsContainer': { width: '100%' },
+            '& .MuiDataGrid-cell': { maxWidth: 'none !important' },
+            '& .MuiDataGrid-row': { width: '100%' },
+            '& .MuiDataGrid-root': { width: '100%' },
+            '& .MuiDataGrid-footerContainer': { width: '100%' },
+            '& .MuiDataGrid-columnHeaders': { width: '100%' },
+          }}
           slots={{ toolbar: GridToolbar }}
           slotProps={{
             toolbar: {

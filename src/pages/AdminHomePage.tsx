@@ -16,9 +16,9 @@ export default function AdminHomePage() {
   const phaseTemplateQuery = usePhaseTemplatesQuery();
   const phaseTemplates = phaseTemplateQuery.data?.data ?? [];
   return (
-    <Box sx={{ flexGrow: 1, height: "100vh", overflow: "auto" }}>
+    <Box sx={{ flexGrow: 1, height: "100vh", width: "100%", overflow: "auto" }}>
       <Toolbar />
-      <Container sx={{ my: 4 }} maxWidth="xl">
+      <Container sx={{ my: 4, width: '100%' }} maxWidth={false}>
         <Grid container spacing={2}>
           <Grid item xs={3}>
             <TotalActiveUsers total={accounts.length} />

@@ -1,4 +1,4 @@
-import {
+ import {
   Box,
   Button,
   Checkbox,
@@ -74,7 +74,7 @@ const PermissionsSection = ({
 };
 interface FormData {
   email: string;
-  role: "manager" | "member";
+  role: "admin" | "project_manager" | "security_expert" | "member";
   permission: Record<string, boolean>;
 }
 export default function EditAccountDialog({ id, open, setOpen }: DialogProps) {
@@ -163,7 +163,8 @@ export default function EditAccountDialog({ id, open, setOpen }: DialogProps) {
                         defaultValue={account.role}
                         fullWidth
                       >
-                        <MenuItem value="manager">Manager</MenuItem>
+                        <MenuItem value="project_manager">Project Manager</MenuItem>
+                        <MenuItem value="security_expert">Security Expert</MenuItem>
                         <MenuItem value="member">Member</MenuItem>
                       </Select>
                     );

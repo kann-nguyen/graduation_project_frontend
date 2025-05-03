@@ -88,13 +88,36 @@ export default function PhaseTemplateMgmtCard({ sx }: { sx?: SxProps }) {
     },
   ];
   return (
-    <Card sx={sx}>
+    <Card sx={{ width: '100%', display: 'flex', flexDirection: 'column', ...sx }}>
       <CardHeader title="Phase template" />
-      <CardContent>
+      <CardContent sx={{ 
+        width: '100%', 
+        padding: 2, 
+        flexGrow: 1,
+        '& .MuiDataGrid-root': {
+          border: 'none',
+          width: '100%'
+        }
+      }}>
         <DataGrid
           rows={phaseTemplates}
           columns={columns}
           getRowId={(row) => row._id}
+          autoHeight
+          disableColumnFilter
+          disableColumnSelector
+          disableDensitySelector
+          sx={{ 
+            width: '100%',
+            '& .MuiDataGrid-main': { width: '100%' },
+            '& .MuiDataGrid-virtualScroller': { width: '100%' },
+            '& .MuiDataGrid-columnsContainer': { width: '100%' },
+            '& .MuiDataGrid-cell': { maxWidth: 'none !important' },
+            '& .MuiDataGrid-row': { width: '100%' },
+            '& .MuiDataGrid-root': { width: '100%' },
+            '& .MuiDataGrid-footerContainer': { width: '100%' },
+            '& .MuiDataGrid-columnHeaders': { width: '100%' },
+          }}
         />
       </CardContent>
       <PhaseTemplateDetailsDialog open={openView} setOpen={setOpenView} />
