@@ -1,5 +1,5 @@
 import { Done, Pending, ErrorOutline, CheckCircle } from "@mui/icons-material";
-import { Chip, Tooltip, useTheme } from "@mui/material";
+import { Chip, PaletteColor, Tooltip, useTheme } from "@mui/material";
 
 export default function TicketStatusChip({ status }: { status: string }) {
   const theme = useTheme();
@@ -57,7 +57,11 @@ export default function TicketStatusChip({ status }: { status: string }) {
           fontWeight: 500,
           transition: 'all 0.2s ease',
           '&:hover': {
-            boxShadow: `0 0 0 1px ${theme.palette[color === 'default' ? 'grey' : color].main}`
+            boxShadow: `0 0 0 1px ${
+              color === 'default' 
+                ? theme.palette.grey[500] 
+                : (theme.palette[color] as PaletteColor).main
+            }`
           }
         }}
       />

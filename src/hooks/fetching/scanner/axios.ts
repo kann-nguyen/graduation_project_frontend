@@ -1,5 +1,6 @@
 import api from "~/api";
 import { PromiseServer } from "../response-type";
+import { CreateOrUpdateNewScanner, Sample, Scanner } from ".";
 
 export async function getSampleCode(): PromiseServer<Sample> {
   const response = await api.get("/scanner/sample");

@@ -18,6 +18,7 @@ import {
 } from "~/hooks/fetching/scanner/query";
 import Instruction from "../text/Instruction";
 import { useSearchParams } from "react-router-dom";
+import { CreateOrUpdateNewScanner } from "~/hooks/fetching/scanner";
 
 export default function EditScannerDialog({
   open,

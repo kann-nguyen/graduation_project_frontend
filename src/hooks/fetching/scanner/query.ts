@@ -8,6 +8,7 @@ import {
 } from "./axios";
 import { useSnackbar } from "notistack";
 import { toast } from "~/utils/toast";
+import { CreateOrUpdateNewScanner } from ".";
 
 export function useSampleCode() {
   return useQuery(["sample"], getSampleCode);
