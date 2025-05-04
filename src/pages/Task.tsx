@@ -22,7 +22,7 @@ function getProgressTotal(tasks: Task[]) {
   return (completed / total) * 100;
 }
 
-export default function Task() {
+export default function TaskPage() {
   const [open, setOpen] = useState(false);
   const memberInfoQuery = useUserByAccountIdQuery();
   const memberInfo = memberInfoQuery.data?.data;
