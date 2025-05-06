@@ -87,7 +87,7 @@ export default function ThreatDetail() {
   const [currentMitigation, setCurrentMitigation] = useState<Mitigation | null>(null);
   
   // Authentication
-  const isManager = useUserRole() === "project_manager" || useUserRole() === "security_expert";
+  const isManager = useUserRole() === "security_expert";
 
   // Fetch basic threat info and detailed info on page load
   useEffect(() => {
