@@ -15,25 +15,33 @@ import {
   ListItemText,
   Avatar,
   Chip,
-  Divider
+  Divider,
+  Card,
+  CardContent,
+  Button
 } from "@mui/material";
 import {
   Dashboard,
   Business,
   CalendarToday,
   AccessTime,
-  Timeline
+  Timeline,
+  ArticleOutlined,
+  BugReport,
+  Security
 } from "@mui/icons-material";
-import { useParams } from "react-router-dom";
+import { useParams, Link as RouterLink } from "react-router-dom";
 import Chart from "~/components/charts/ActivityHistoryChart";
 import { useActivityHistoryQuery } from "~/hooks/fetching/history/query";
 import { useProjectInfoQuery } from "~/hooks/fetching/project/query";
 import { useTasksQuery } from "~/hooks/fetching/task/query";
 import { useTicketsQuery } from "~/hooks/fetching/ticket/query";
+import { useArtifactsQuery } from "~/hooks/fetching/artifact/query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useUserByAccountIdQuery } from '~/hooks/fetching/user/query';
 import ProjectSelector from "~/components/layout-components/ProjectSelector";
+import ArtifactsSection from "~/components/layout-components/ArtifactsSection";
 
 // Extend dayjs with relative time
 dayjs.extend(relativeTime);
@@ -419,6 +427,28 @@ export default function ManagerHomePage() {
               }}
             />
           </Box>
+        </Paper>
+
+        {/* Project Artifacts */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 4,
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper'
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" fontWeight="bold">
+              Project Artifacts
+            </Typography>
+            
+          </Box>
+          
+          {/* Artifacts Grid Section */}
+          <ArtifactsSection currentProject={currentProject || ''} />
         </Paper>
       </Container>
     </Box>
