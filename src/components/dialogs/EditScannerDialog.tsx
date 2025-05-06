@@ -18,6 +18,7 @@ import {
 } from "~/hooks/fetching/scanner/query";
 import Instruction from "../text/Instruction";
 import { useSearchParams } from "react-router-dom";
+import { CreateOrUpdateNewScanner } from "~/hooks/fetching/scanner";
 
 export default function EditScannerDialog({
   open,
@@ -50,6 +51,13 @@ export default function EditScannerDialog({
             {...register("name", {
               required: "Name is required",
             })}
+          />
+          <TextField
+            defaultValue={scanner.endpoint}
+            fullWidth
+            label="Endpoint"
+            {...register("endpoint")}
+            helperText="URL where your scanner service is hosted (e.g., http://localhost:3000)"
           />
           <TextField
             defaultValue={scanner.config?.installCommand}
