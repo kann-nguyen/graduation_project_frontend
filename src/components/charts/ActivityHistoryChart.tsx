@@ -52,7 +52,6 @@ export default function Chart({
   const lessThanMedium = useMediaQuery(theme.breakpoints.down("md"));
   return (
     <Card sx={sx}>
-      <CardHeader title="Activity history" />
       <CardContent>
         <ResponsiveContainer width="100%" aspect={3 / 1}>
           <BarChart

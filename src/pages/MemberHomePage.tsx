@@ -55,6 +55,7 @@ import { useProjectInfoQuery } from "~/hooks/fetching/project/query";
 import { Task } from "~/hooks/fetching/task";
 import { ActivityHistory } from "~/hooks/fetching/history";
 import { Project } from "~/hooks/fetching/project";
+import ProjectSelector from "~/components/layout-components/ProjectSelector";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
@@ -130,7 +131,14 @@ export default function MemberHomePage() {
     }}>
       <Toolbar />
       <Container sx={{ py: 3 }} maxWidth="xl">
-        {/* Page Header */}
+        <Typography variant="h3" fontWeight="bold" sx={{ mb: 3 }}>
+          Welcome back, {user.name}!
+        </Typography>
+
+        {/* Project Selector */}
+        <ProjectSelector />
+        
+        {/* User Stats */}
         <Paper 
           elevation={0} 
           sx={{ 
@@ -158,126 +166,77 @@ export default function MemberHomePage() {
           </Box>
           
           <Box sx={{ position: 'relative', zIndex: 1 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={7}>
-                <Box>
-                  <Typography variant="h4" fontWeight="bold">
-                    {projectInfo?.name || "Project Dashboard"}
+            <Typography variant="h4" fontWeight="bold">
+              Here's your task and ticket overview
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
+              Overview of your current assignments
+            </Typography>
+            
+            <Grid container spacing={2} sx={{ mt: 2 }}>
+              <Grid item xs={12} md={6}>
+                <Paper elevation={0} sx={{ 
+                  p: 2, 
+                  borderRadius: 2, 
+                  bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+                }}>
+                  <Typography variant="body2" color="text.secondary">Tasks Progress</Typography>
+                  <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.primary.main, my: 0.5 }}>
+                    {completedTasks}/{taskAssigned.length}
                   </Typography>
-                  <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-                    Welcome back, {user.name}!
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={taskCompletionRate} 
+                    sx={{ 
+                      height: 8, 
+                      borderRadius: 4,
+                      bgcolor: alpha(theme.palette.primary.main, 0.2),
+                      '& .MuiLinearProgress-bar': {
+                        bgcolor: theme.palette.primary.main
+                      }
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'right' }}>
+                    {taskCompletionRate}% Complete
                   </Typography>
-                  
-                  {projectInfo && (
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      mt: 1, 
-                      gap: 3,
-                      flexWrap: 'wrap'
-                    }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Business sx={{ color: alpha(theme.palette.primary.main, 0.7), mr: 1, fontSize: '1.2rem' }} />
-                        <Typography variant="body2" color="text.secondary">
-                          Project URL: <MuiLink 
-                            component="a" 
-                            href={projectInfo?.url} 
-                            target="_blank" 
-                            underline="hover"
-                            sx={{ color: theme.palette.primary.main }}
-                          >
-                            Repository
-                          </MuiLink>
-                        </Typography>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <CalendarToday sx={{ color: alpha(theme.palette.primary.main, 0.7), mr: 1, fontSize: '1.2rem' }} />
-                        <Typography variant="body2" color="text.secondary">
-                          Created at: {projectInfo?.createdAt ? dayjs(projectInfo.createdAt).format('MMM DD, YYYY') : 'Not set'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <CalendarToday sx={{ color: alpha(theme.palette.primary.main, 0.7), mr: 1, fontSize: '1.2rem' }} />
-                        <Typography variant="body2" color="text.secondary">
-                          Updated at: {projectInfo?.updatedAt ? dayjs(projectInfo.updatedAt).format('MMM DD, YYYY') : 'Not set'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  )}
-                </Box>
+                </Paper>
               </Grid>
               
-              <Grid item xs={12} md={5}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: { xs: 'column', sm: 'row' }, 
-                  gap: 2,
-                  justifyContent: 'flex-end'
+              <Grid item xs={12} md={6}>
+                <Paper elevation={0} sx={{ 
+                  p: 2, 
+                  borderRadius: 2, 
+                  bgcolor: alpha(theme.palette.error.main, 0.05),
+                  border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`
                 }}>
-                  <Paper elevation={0} sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
-                    flex: 1,
-                    bgcolor: alpha(theme.palette.primary.main, 0.05),
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
-                  }}>
-                    <Typography variant="body2" color="text.secondary">Tasks Progress</Typography>
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.primary.main, my: 0.5 }}>
-                      {completedTasks}/{taskAssigned.length}
-                    </Typography>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={taskCompletionRate} 
-                      sx={{ 
-                        height: 8, 
-                        borderRadius: 4,
-                        bgcolor: alpha(theme.palette.primary.main, 0.2),
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: theme.palette.primary.main
-                        }
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'right' }}>
-                      {taskCompletionRate}% Complete
-                    </Typography>
-                  </Paper>
-                  
-                  <Paper elevation={0} sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
-                    flex: 1,
-                    bgcolor: alpha(theme.palette.error.main, 0.05),
-                    border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`
-                  }}>
-                    <Typography variant="body2" color="text.secondary">Tickets Progress</Typography>
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.error.main, my: 0.5 }}>
-                      {submittedTickets}/{ticketAssigned.length}
-                    </Typography>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={ticketResolutionRate} 
-                      sx={{ 
-                        height: 8, 
-                        borderRadius: 4,
-                        bgcolor: alpha(theme.palette.error.main, 0.2),
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: theme.palette.error.main
-                        }
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'right' }}>
-                      {ticketResolutionRate}% Submitted
-                    </Typography>
-                  </Paper>
-                </Box>
+                  <Typography variant="body2" color="text.secondary">Tickets Progress</Typography>
+                  <Typography variant="h5" fontWeight="bold" sx={{ color: theme.palette.error.main, my: 0.5 }}>
+                    {submittedTickets}/{ticketAssigned.length}
+                  </Typography>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={ticketResolutionRate} 
+                    sx={{ 
+                      height: 8, 
+                      borderRadius: 4,
+                      bgcolor: alpha(theme.palette.error.main, 0.2),
+                      '& .MuiLinearProgress-bar': {
+                        bgcolor: theme.palette.error.main
+                      }
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'right' }}>
+                    {ticketResolutionRate}% Submitted
+                  </Typography>
+                </Paper>
               </Grid>
             </Grid>
           </Box>
         </Paper>
 
-                {/* Recent Activity */}
-                <Paper 
+        {/* Recent Activity */}
+        <Paper 
           elevation={0} 
           sx={{ 
             borderRadius: 2, 

@@ -20,7 +20,7 @@ export default function MemberSidebarItems() {
   const encodedUrl = encodeURIComponent(currentProject);
   return (
     <List component="nav">
-      <Item text="Overview" icon={<HomeOutlined />} path={`/${encodedUrl}/`} />
+      <Item text="Home" icon={<HomeOutlined />} path={`/${encodedUrl}/`} />
       <Item
         text="Ticket"
         icon={<FactCheckOutlined />}
