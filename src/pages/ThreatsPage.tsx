@@ -499,60 +499,6 @@ export default function ThreatsPage() {
             </Box>
           )}
         </Card>
-
-        {/* Threat Types Statistics */}
-        {filteredThreats.length > 0 && (
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 3, 
-              mb: 4, 
-              borderRadius: 2,
-              border: `1px solid ${theme.palette.divider}`,
-              bgcolor: 'background.paper'
-            }}
-          >
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Threat Types Distribution
-            </Typography>
-            <Grid container spacing={2}>
-              {threatTypes.slice(1).map(type => {
-                const typeCount = threats.filter(t => t.type === type).length;
-                const typeInfo = getThreatTypeInfo(type);
-                
-                return (
-                  <Grid item xs={6} sm={4} md={2} key={type}>
-                    <Paper elevation={0} sx={{ 
-                      p: 2, 
-                      borderRadius: 2,
-                      bgcolor: alpha(typeInfo.color, 0.05),
-                      border: `1px solid ${alpha(typeInfo.color, 0.1)}`
-                    }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Avatar sx={{ 
-                          width: 24, 
-                          height: 24, 
-                          fontSize: '0.8rem', 
-                          bgcolor: alpha(typeInfo.color, 0.2),
-                          color: typeInfo.color,
-                          mr: 1
-                        }}>
-                          {typeInfo.icon}
-                        </Avatar>
-                        <Typography variant="body2" noWrap>
-                          {type}
-                        </Typography>
-                      </Box>
-                      <Typography variant="h5" fontWeight="bold" sx={{ color: typeInfo.color }}>
-                        {typeCount}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          </Paper>
-        )}
       </Container>
     </Box>
   );
