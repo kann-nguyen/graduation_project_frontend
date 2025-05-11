@@ -90,15 +90,16 @@ function CreatePhaseTemplate() {
             No phases found in this project
           </Typography>
           <Typography variant="body1" sx={{ mb: 4 }}>
-            You can either create phases from a template or create a new template for future use.
+            Create phases for your project by using a template or designing a new set of phases.
           </Typography>
           <Stack direction="row" spacing={2} justifyContent="center">
             <Button
               variant="contained"
               color="primary"
+              size="large"
               onClick={() => setOpen(true)}
             >
-              Create phases from template
+              Create project phases
             </Button>
           </Stack>
         </Box>

@@ -100,13 +100,24 @@ function SelectTemplateOrCreate({
   }
   return (
     <Box
-      sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+      sx={{ display: "flex", flexDirection: "column", alignItems: "center", my: 2 }}
     >
-      <Button variant="contained" sx={{ mt: 2 }} onClick={selectTemplate}>
-        Select a template
+      <Typography variant="body1" gutterBottom>
+        Choose how you want to create phases for your project:
+      </Typography>
+      <Button 
+        variant="contained" 
+        sx={{ mt: 2, minWidth: 240 }} 
+        onClick={selectTemplate}
+      >
+        Use an existing template
       </Button>
-      <Button variant="contained" sx={{ mt: 2 }} onClick={createNew}>
-        Create a new one
+      <Button 
+        variant="contained" 
+        sx={{ mt: 2, minWidth: 240 }} 
+        onClick={createNew}
+      >
+        Create new phases
       </Button>
     </Box>
   );
@@ -190,10 +201,10 @@ function CreateNew({ updateStep }: CreatePhaseTemplateProps) {
               render={({ field }) => <Checkbox {...field} />}
             />
           }
-          label="Make this template private"
+          label="Save this as a private template for future use"
         />
         <TextField
-          label="Template's name"
+          label="Set name"
           variant="outlined"
           fullWidth
           {...register("name", { required: "Name is required" })}
@@ -201,7 +212,7 @@ function CreateNew({ updateStep }: CreatePhaseTemplateProps) {
           helperText={errors.name?.message}
         />
         <TextField
-          label="Template's description"
+          label="Set description"
           variant="outlined"
           multiline
           rows={4}
@@ -210,14 +221,17 @@ function CreateNew({ updateStep }: CreatePhaseTemplateProps) {
           error={!!errors.name}
           helperText={errors.description?.message}
         />
+        <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 2, alignSelf: "flex-start" }}>
+          Phases to create:
+        </Typography>
         {fields.map((field, index) => (
-          <Card sx={{ m: 1 }} key={field.id}>
+          <Card sx={{ m: 1, width: '100%' }} key={field.id}>
             <CardContent>
               <Typography gutterBottom variant="h5" component="div">
                 Phase {index + 1}
               </Typography>
               <TextField
-                label="Name"
+                label="Phase name"
                 fullWidth
                 {...register(`phases.${index}.name` as const, {
                   required: "Name is required",
@@ -227,7 +241,7 @@ function CreateNew({ updateStep }: CreatePhaseTemplateProps) {
                 sx={{ mb: 1 }}
               />
               <TextField
-                label="Description"
+                label="Phase description"
                 fullWidth
                 multiline
                 rows={4}
@@ -253,7 +267,7 @@ function CreateNew({ updateStep }: CreatePhaseTemplateProps) {
           }
           fullWidth
         >
-          Add phase
+          Add another phase
         </Button>
         <Button
           fullWidth
@@ -274,20 +288,22 @@ function ConfirmPhaseTemplate() {
   const { data } = useContext(PhaseTemplateContext);
   return (
     <Stack spacing={1} alignItems="center" sx={{ m: 2 }}>
-      <FormControlLabel
-        control={<Checkbox defaultChecked={data?.isPrivate} />}
-        label="Private template"
-        disabled
-      />
+      {data?.isPrivate && (
+        <FormControlLabel
+          control={<Checkbox checked={data?.isPrivate} />}
+          label="This will be saved as a private template for future use"
+          disabled
+        />
+      )}
       <TextField
-        label="Template's name"
+        label="Name"
         variant="outlined"
         fullWidth
         disabled
         defaultValue={data?.name}
       />
       <TextField
-        label="Template's description"
+        label="Description"
         variant="outlined"
         multiline
         rows={4}
@@ -295,21 +311,26 @@ function ConfirmPhaseTemplate() {
         disabled
         defaultValue={data?.description}
       />
+      
+      <Typography variant="h6" sx={{ mt: 2, alignSelf: "flex-start" }}>
+        The following phases will be created:
+      </Typography>
+      
       {data?.phases.map((field, index) => (
-        <Card sx={{ m: 1 }} key={index}>
+        <Card sx={{ m: 1, width: '100%' }} key={index}>
           <CardContent>
             <Typography gutterBottom variant="h5" component="div">
               Phase {index + 1}
             </Typography>
             <TextField
-              label="Name"
+              label="Phase name"
               fullWidth
               sx={{ mb: 1 }}
               disabled
               defaultValue={field.name}
             />
             <TextField
-              label="Description"
+              label="Phase description"
               fullWidth
               multiline
               rows={4}
@@ -378,15 +399,14 @@ export default function CreatePhaseFromTemplateDialog({
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth>
         <DialogTitle>
           {activeStep === 0
-            ? "Create a new phase template"
+            ? "Create phases for your project"
             : activeStep === 1
             ? "Fill in the information"
             : "Confirmation"}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            This wizard will help you create a new phase template. Tip: You can
-            always click on the steps to go back.
+            This wizard will help you create phases for your project. You can either select from existing templates or create a new set of phases.
           </DialogContentText>
           <Box>{conditionalRender()}</Box>
           <Stepper activeStep={activeStep} sx={{ m: 4 }} nonLinear>
@@ -404,7 +424,7 @@ export default function CreatePhaseFromTemplateDialog({
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
           {activeStep === 2 && (
-            <Button onClick={createPhasesFromTemplate}>Create</Button>
+            <Button onClick={createPhasesFromTemplate}>Create Phases</Button>
           )}
         </DialogActions>
       </Dialog>
