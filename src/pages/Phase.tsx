@@ -18,6 +18,7 @@ import { useProjectInfoQuery } from "~/hooks/fetching/project/query";
 
 export default function Phase() {
   const [open, setOpen] = useState(false);
+  const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const { currentProject } = useParams();
   const projectQuery = useProjectInfoQuery(currentProject);
   const project = projectQuery.data?.data;
@@ -31,10 +32,26 @@ export default function Phase() {
         <Stack spacing={4}>
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography variant="h4">Phases</Typography>
-            <Button variant="contained" onClick={() => setOpen(true)}>
-              Manage phase templates
-            </Button>
+            <Stack direction="row" spacing={2}>
+              <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
+                Manage phase templates
+              </Button>
+              <Button 
+                variant="contained" 
+                color="success"
+                onClick={() => {
+                  setOpen(false); // Close the template dialog if open
+                  const timeout = setTimeout(() => {
+                    setPhaseDialogOpen(true);
+                  }, 100);
+                  return () => clearTimeout(timeout);
+                }}
+              >
+                Create new phase
+              </Button>
+            </Stack>
             <ManageTemplateDialog open={open} setOpen={setOpen} />
+            <CreatePhaseFromTemplateDialog open={phaseDialogOpen} setOpen={setPhaseDialogOpen} />
           </Box>
           <Grid container spacing={3}>
             <Grid item xs={12}>
@@ -68,17 +85,22 @@ function CreatePhaseTemplate() {
     >
       <Toolbar />
       <Container maxWidth="lg" sx={{ my: 4 }}>
-        <Box sx={{ display: "flex" }}>
-          <Typography variant="h4">
-            You haven't created a phase template yet. Do it now?
+        <Box sx={{ textAlign: "center" }}>
+          <Typography variant="h4" gutterBottom>
+            No phases found in this project
           </Typography>
-          <Button
-            variant="contained"
-            sx={{ mx: 2 }}
-            onClick={() => setOpen(true)}
-          >
-            Create a phase template
-          </Button>
+          <Typography variant="body1" sx={{ mb: 4 }}>
+            You can either create phases from a template or create a new template for future use.
+          </Typography>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setOpen(true)}
+            >
+              Create phases from template
+            </Button>
+          </Stack>
         </Box>
       </Container>
       <CreatePhaseFromTemplateDialog open={open} setOpen={setOpen} />

@@ -43,6 +43,10 @@ export default function ImageScanningConfigDialog({
   const watchService = watch("service");
   const scannersQuery = useGetScanners();
   const scanners = scannersQuery.data?.data;
+
+  // Get default scanner name safely with null checks
+  const defaultScannerName = accountContext?.scanner?.details?.name || (scanners && scanners.length > 0 ? scanners[0].name : "");
+
   async function onSubmit(data: FormData) {
     const { endpoint, service } = data;
     updateScannerPref.mutate({
@@ -61,7 +65,7 @@ export default function ImageScanningConfigDialog({
               <FormLabel>Service</FormLabel>
               <Controller
                 name="service"
-                defaultValue={accountContext.scanner.details.name}
+                defaultValue={defaultScannerName}
                 control={control}
                 render={({ field }) => (
                   <RadioGroup {...field} row>
@@ -101,7 +105,12 @@ export default function ImageScanningConfigDialog({
               />
             </FormControl>
             {watchSelection === "self-hosted" && (
-              <TextField label="Endpoint" fullWidth {...register("endpoint")} />
+              <TextField 
+                label="Endpoint" 
+                fullWidth 
+                {...register("endpoint")}
+                defaultValue={accountContext?.scanner?.endpoint || ""}
+              />
             )}
           </Stack>
           <Divider orientation="vertical" flexItem />
