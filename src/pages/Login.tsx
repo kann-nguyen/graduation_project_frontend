@@ -30,10 +30,14 @@ export default function Login() {
   } = useForm<IFormInput>();
   const loginMutation = useLoginMutation();
   function githubLogin() {
-    window.open(`${API_BASE_URL}auth/github`, "_self");
+    // Ensure there's a slash between the base URL and the path
+    const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+    window.open(`${baseUrl}auth/github`, "_self");
   }
   function gitlabLogin() {
-    window.open(`${API_BASE_URL}auth/gitlab`, "_self");
+    // Ensure there's a slash between the base URL and the path
+    const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+    window.open(`${baseUrl}auth/gitlab`, "_self");
   }
   async function onSubmit(data: IFormInput) {
     loginMutation.mutate(data);
