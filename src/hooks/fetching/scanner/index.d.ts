@@ -4,6 +4,7 @@ interface Sample {
 }
 interface CreateOrUpdateNewScanner {
   name: string;
+  endpoint?: string;
   config: {
     installCommand: string;
     code: string;

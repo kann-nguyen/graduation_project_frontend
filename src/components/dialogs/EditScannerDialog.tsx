@@ -53,6 +53,13 @@ export default function EditScannerDialog({
             })}
           />
           <TextField
+            defaultValue={scanner.endpoint}
+            fullWidth
+            label="Endpoint"
+            {...register("endpoint")}
+            helperText="URL where your scanner service is hosted (e.g., http://localhost:3000)"
+          />
+          <TextField
             defaultValue={scanner.config?.installCommand}
             fullWidth
             label="Install command"

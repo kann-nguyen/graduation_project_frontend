@@ -19,6 +19,7 @@ import Instruction from "../text/Instruction";
 
 interface FormData {
   name: string;
+  endpoint: string;
   config: {
     installCommand: string;
     code: string;
@@ -96,6 +97,11 @@ export default function AddNewToolDialog({
               })}
               error={!!errors.name}
               helperText={errors.name?.message}
+            />
+            <TextField
+              label="Endpoint"
+              {...register("endpoint")}
+              helperText="Optional URL where your scanner service will be hosted (e.g., http://localhost:3000)"
             />
             <TextField
               label="Install command"
