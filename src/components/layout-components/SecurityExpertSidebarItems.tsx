@@ -21,7 +21,7 @@ export default function SecurityExpertSidebarItems() {
   const encodedUrl = encodeURIComponent(currentProject);
   return (
     <List component="nav">
-      <Item text="Dashboard" icon={<HomeOutlined />} path={`/${encodedUrl}/`} />
+      <Item text="Home" icon={<HomeOutlined />} path={`/${encodedUrl}/`} />
       <Item 
         text="Threat" 
         icon={<BugReport />} 

@@ -56,6 +56,21 @@ import relativeTime from "dayjs/plugin/relativeTime";
 // Extend dayjs
 dayjs.extend(relativeTime);
 
+// Add role color helper function at the top before the component
+function getRoleColor(role: string, theme: any) {
+  switch (role) {
+    case 'admin':
+      return theme.palette.error.main;
+    case 'project_manager':
+      return theme.palette.primary.main;
+    case 'security_expert':
+      return theme.palette.warning.main;
+    case 'member':
+    default:
+      return theme.palette.info.main;
+  }
+}
+
 export default function MembersPage() {
   const { currentProject } = useParams();
   const membersQuery = useGetMembersOfProjectQuery(currentProject || '');
@@ -74,6 +89,8 @@ export default function MembersPage() {
   const [tabValue, setTabValue] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  // State for filtering accounts in the add member dialog
+  const [accountSearchTerm, setAccountSearchTerm] = useState('');
   
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -103,6 +120,19 @@ export default function MembersPage() {
     }
   };
   
+  const handleAddMemberDirectly = async (accountId: string) => {
+    if (!accountId || !currentProject) return;
+    
+    try {
+      await addMemberMutation.mutateAsync({
+        accountId,
+        projectName: currentProject
+      });
+    } catch (error) {
+      console.error('Failed to add member:', error);
+    }
+  };
+
   const handleRemoveMember = async (accountId: string) => {
     if (!currentProject) return;
     
@@ -509,33 +539,189 @@ export default function MembersPage() {
       </Container>
       
       {/* Add Member Dialog */}
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Member to Project</DialogTitle>
-        <DialogContent>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Typography variant="h6" component="div">
+            Add Member to Project
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Click on a user to add them to {currentProject}
+          </Typography>
+        </DialogTitle>
+        <DialogContent dividers>
           <TextField
-            select
-            label="Select User"
+            placeholder="Search users by name, username, email or role..."
             fullWidth
-            value={selectedAccount}
-            onChange={(e) => setSelectedAccount(e.target.value)}
-            sx={{ mt: 2 }}
-          >
-            {accounts.map((account) => (
-              <MenuItem key={account._id} value={account._id}>
-                {account.username} - {account.role.replace('_', ' ')}
-              </MenuItem>
-            ))}
-          </TextField>
+            size="small"
+            value={accountSearchTerm}
+            onChange={(e) => setAccountSearchTerm(e.target.value)}
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search fontSize="small" />
+                </InputAdornment>
+              ),
+              endAdornment: accountSearchTerm ? (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setAccountSearchTerm('')}>
+                    <Clear fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ) : null
+            }}
+          />
+          
+          <Box sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              {accounts.length > 0 ? (
+                accounts
+                  .filter(account => 
+                    (account.username?.toLowerCase() || '').includes(accountSearchTerm.toLowerCase()) ||
+                    (account.email?.toLowerCase() || '').includes(accountSearchTerm.toLowerCase()) ||
+                    (account.role?.toLowerCase() || '').includes(accountSearchTerm.toLowerCase())
+                  )
+                  .map((account) => {
+                    // Find user data for this account to show skills
+                    const userData = members.find(m => m.account?._id === account._id);
+                    const isAlreadyMember = !!userData;
+                    
+                    return (
+                      <Grid item xs={12} sm={6} key={account._id}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 2,
+                            border: `1px solid ${isAlreadyMember 
+                              ? alpha(theme.palette.warning.main, 0.5)
+                              : theme.palette.divider}`,
+                            borderRadius: 2,
+                            cursor: isAlreadyMember ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s',
+                            bgcolor: isAlreadyMember 
+                              ? alpha(theme.palette.warning.main, 0.05)
+                              : 'background.paper',
+                            '&:hover': {
+                              borderColor: isAlreadyMember 
+                                ? alpha(theme.palette.warning.main, 0.5)
+                                : theme.palette.primary.main,
+                              bgcolor: isAlreadyMember
+                                ? alpha(theme.palette.warning.main, 0.05) 
+                                : alpha(theme.palette.primary.main, 0.05)
+                            },
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            position: 'relative'
+                          }}
+                          onClick={() => {
+                            if (!isAlreadyMember) {
+                              handleAddMemberDirectly(account._id);
+                            }
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                            <Avatar
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                bgcolor: isAlreadyMember
+                                  ? alpha(theme.palette.warning.main, 0.3)
+                                  : getRoleColor(account.role || '', theme),
+                                mr: 1.5
+                              }}
+                            >
+                              {account.username?.charAt(0).toUpperCase() || 'U'}
+                            </Avatar>
+                            <Box sx={{ flex: 1 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="subtitle1" component="div" fontWeight="medium" noWrap>
+                                  {account.username || 'Unknown User'}
+                                </Typography>
+                                <Chip
+                                  size="small"
+                                  label={account.role?.replace('_', ' ').toUpperCase() || 'MEMBER'}
+                                  sx={{
+                                    fontWeight: 'medium',
+                                    bgcolor: alpha(getRoleColor(account.role || '', theme), 0.1),
+                                    color: getRoleColor(account.role || '', theme),
+                                    ml: 1
+                                  }}
+                                />
+                              </Box>
+                              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }} noWrap>
+                                <Email fontSize="small" sx={{ mr: 0.5, fontSize: 16 }} />
+                                {account.email || 'No email provided'}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          
+                          {isAlreadyMember && (
+                            <Box sx={{ 
+                              position: 'absolute', 
+                              top: 8, 
+                              right: 8,
+                              bgcolor: theme.palette.warning.main,
+                              color: theme.palette.warning.contrastText,
+                              fontSize: '0.7rem',
+                              fontWeight: 'bold',
+                              px: 1,
+                              py: 0.5,
+                              borderRadius: 1
+                            }}>
+                              ALREADY MEMBER
+                            </Box>
+                          )}
+                        </Paper>
+                      </Grid>
+                    );
+                  })
+              ) : (
+                <Grid item xs={12}>
+                  <Box sx={{ 
+                    p: 4, 
+                    textAlign: 'center', 
+                    bgcolor: alpha(theme.palette.primary.main, 0.03),
+                    borderRadius: 2,
+                    border: `1px dashed ${alpha(theme.palette.primary.main, 0.2)}`
+                  }}>
+                    <PersonAdd sx={{ fontSize: 60, color: alpha(theme.palette.primary.main, 0.3), mb: 1 }} />
+                    <Typography variant="h6" color="text.secondary">
+                      Loading users...
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+            </Grid>
+            
+            {accounts.length > 0 && accounts.filter(account => 
+              (account.username?.toLowerCase() || '').includes(accountSearchTerm.toLowerCase()) ||
+              (account.email?.toLowerCase() || '').includes(accountSearchTerm.toLowerCase()) ||
+              (account.role?.toLowerCase() || '').includes(accountSearchTerm.toLowerCase())
+            ).length === 0 && (
+              <Box sx={{ 
+                p: 4, 
+                textAlign: 'center', 
+                bgcolor: alpha(theme.palette.primary.main, 0.03),
+                borderRadius: 2,
+                border: `1px dashed ${alpha(theme.palette.primary.main, 0.2)}`,
+                mt: 2
+              }}>
+                <PersonAdd sx={{ fontSize: 60, color: alpha(theme.palette.primary.main, 0.3), mb: 1 }} />
+                <Typography variant="h6" color="text.secondary">
+                  No users found
+                </Typography>
+                {accountSearchTerm && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Try adjusting your search criteria
+                  </Typography>
+                )}
+              </Box>
+            )}
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleAddMember} 
-            variant="contained"
-            disabled={!selectedAccount}
-          >
-            Add Member
-          </Button>
+          <Button onClick={() => setOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>
