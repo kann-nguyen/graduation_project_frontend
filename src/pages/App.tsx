@@ -32,6 +32,7 @@ const AdminTemplatePage = lazy(() => import("./AdminTemplatePage"));
 const AdminToolPage = lazy(() => import("./AdminToolPage"));
 const FirstTimeLoginPage = lazy(() => import("./FirstTimeLoginPage"));
 const ProjectPage = lazy(() => import("./ProjectPage"));
+const ProjectsPage = lazy(() => import("./ProjectsPage"));
 const Task = lazy(() => import("./Task"));
 const DashboardLayout = lazy(() => import("~/layouts/DashboardLayout"));
 const AccountInfo = lazy(() => import("./Account"));
@@ -100,6 +101,10 @@ const managerAndMemberRoutes: RouteObject = {
       element: <GlobalSuspense element={<MembersPage />} />,
     },
     {
+      path: "projects",
+      element: <GlobalSuspense element={<ProjectsPage />} />,
+    },
+    {
       path: "project",
       element: <GlobalSuspense element={<ProjectPage />} />,
     },
@@ -137,6 +142,10 @@ const adminRoutes: RouteObject = {
     {
       path: "home",
       element: <GlobalSuspense element={<AdminPage />} />,
+    },
+    {
+      path: "projects",
+      element: <GlobalSuspense element={<ProjectsPage />} />,
     },
     {
       path: "accounts",

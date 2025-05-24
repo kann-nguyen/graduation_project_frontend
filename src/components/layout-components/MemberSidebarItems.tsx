@@ -22,6 +22,11 @@ export default function MemberSidebarItems() {
     <List component="nav">
       <Item text="Home" icon={<HomeOutlined />} path={`/${encodedUrl}/`} />
       <Item
+        text="Projects"
+        icon={<DashboardOutlined />}
+        path={`/${encodedUrl}/projects`}
+      />
+      <Item
         text="Ticket"
         icon={<FactCheckOutlined />}
         path={`/${encodedUrl}/tickets`}
@@ -31,11 +36,6 @@ export default function MemberSidebarItems() {
         icon={<AssignmentOutlined />}
         path={`/${encodedUrl}/tasks`}
       />
-      {/* <Item
-        text="Project"
-        icon={<DashboardOutlined />}
-        path={`/${encodedUrl}/project`}
-      /> */}
     </List>
   );
 }

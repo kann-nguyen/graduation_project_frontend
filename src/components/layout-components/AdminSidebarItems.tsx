@@ -1,6 +1,7 @@
 import {
   AccountCircleOutlined,
   BuildOutlined,
+  DashboardOutlined,
   HomeOutlined,
   PatternOutlined,
 } from "@mui/icons-material";
@@ -10,6 +11,11 @@ export default function AdminSidebarItems() {
   return (
     <List component="nav">
       <Item text="Overview" icon={<HomeOutlined />} path={`/admin/home`} />
+      <Item
+        text="Projects"
+        icon={<DashboardOutlined />}
+        path={`/admin/projects`}
+      />
       <Item
         text="Account"
         icon={<AccountCircleOutlined />}

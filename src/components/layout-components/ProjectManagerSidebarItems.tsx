@@ -8,6 +8,7 @@ import {
   HomeOutlined,
   SecurityOutlined,
   PeopleOutlined,
+  DashboardOutlined,
 } from "@mui/icons-material";
 
 export default function ManagerSidebarItems() {
@@ -22,6 +23,11 @@ export default function ManagerSidebarItems() {
   return (
     <List component="nav">
       <Item text="Home" icon={<HomeOutlined />} path={`/${encodedUrl}/`} />
+      <Item
+        text="Projects"
+        icon={<DashboardOutlined />}
+        path={`/${encodedUrl}/projects`}
+      />
       <Item
         text="Member"
         icon={<PeopleOutlined />}
