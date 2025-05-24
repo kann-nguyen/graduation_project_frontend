@@ -21,6 +21,7 @@ export interface Artifact {
   vulnerabilityList: Vulnerability[];
   cpe?: string;
   isScanning?: boolean;
+  state: "valid" | "invalid";
 }
 
 export interface ArtifactCreate {
