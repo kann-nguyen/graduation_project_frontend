@@ -16,6 +16,7 @@ import {
   FilterList,
   PieChart as PieChartIcon,
   Assessment,
+  Timeline,
 } from "@mui/icons-material";
 import {
   Box,
@@ -59,6 +60,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useArtifactQuery } from "~/hooks/fetching/artifact/query";
 import { useThreatQuery } from "~/hooks/fetching/threat/query";
 import { useState, useMemo, useEffect, useContext, createContext } from "react";
+import ScanHistoryChart from "~/components/charts/ScanHistoryChart";
 import { Artifact, Vulnerability } from "~/hooks/fetching/artifact";
 import UpdateArtifactDialog from "~/components/dialogs/UpdateArtifactDialog";
 import { useSearchParams } from "react-router-dom";
@@ -1427,10 +1429,25 @@ export default function ArtifactDetail() {
           <PageHeader artifact={artifact} />
           
           <Grid container spacing={3}>
-            <Grid item xs={12} lg={8}>
-              <Stack spacing={3}>
+            <Grid item xs={12} lg={8}>              <Stack spacing={3}>
                 {/* Vulnerability Summary */}
                 <VulnerabilitiesSummary vulnerabilities={artifact.vulnerabilityList || []} />
+                
+                {/* Scan History Chart */}
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    p: 3, 
+                    mb: 3,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography variant="h5" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Timeline sx={{ mr: 1 }} /> Vulnerability Scan History
+                  </Typography>
+                  <ScanHistoryChart scanHistory={artifact.scanHistory} />
+                </Paper>
                 
                 {/* Threat Summary */}
                 <ThreatSummary threatList={artifact.threatList.map(threat => 

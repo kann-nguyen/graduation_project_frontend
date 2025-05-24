@@ -10,6 +10,11 @@ export interface Vulnerability {
   _id: string;
 }
 
+export interface ScanHistoryEntry {
+  timestamp: string;
+  vulnerabilities: Vulnerability[];
+}
+
 export interface Artifact {
   rateReScan: number;
   _id: string;
@@ -22,6 +27,7 @@ export interface Artifact {
   cpe?: string;
   isScanning?: boolean;
   state: "valid" | "invalid";
+  scanHistory?: ScanHistoryEntry[];
 }
 
 export interface ArtifactCreate {
