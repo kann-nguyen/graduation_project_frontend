@@ -42,11 +42,7 @@ export default function CreateArtifactDialog({
     formState: { errors },
     setValue,
     watch,
-  } = useForm<ArtifactCreate>({
-    defaultValues: {
-      threatList: [],
-    },
-  });
+  } = useForm<ArtifactCreate>();
   const watchCpe = watch("cpe");
   useEffect(() => {
     if (watchCpe) {

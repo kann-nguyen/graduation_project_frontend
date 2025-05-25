@@ -34,9 +34,11 @@ const processScanHistory = (scanHistory?: ScanHistoryEntry[]): ScanHistoryData =
   const sortedHistory = [...scanHistory].sort((a, b) => 
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
-
   return {
-    dates: sortedHistory.map(entry => new Date(entry.timestamp).toLocaleDateString()),
+    dates: sortedHistory.map(entry => {
+      const date = new Date(entry.timestamp);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }),
     counts: sortedHistory.map(entry => entry.vulnerabilities.length),
     critical: sortedHistory.map(entry => 
       entry.vulnerabilities.filter(v => v.severity.toUpperCase() === "CRITICAL").length
@@ -84,9 +86,8 @@ const ScanHistoryChart: React.FC<ScanHistoryChartProps> = ({
     ],
     dataLabels: {
       enabled: false
-    },
-    stroke: {
-      curve: 'smooth',
+    },    stroke: {
+      curve: 'straight',
       width: [2, 2, 2, 2, 3], // Total line is a bit thicker
     },
     xaxis: {

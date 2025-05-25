@@ -43,11 +43,7 @@ export default function UpdateArtifactDialog({
     watch,
     setValue,
     reset,
-  } = useForm<ArtifactUpdate>({
-    defaultValues: {
-      threatList: [],
-    },
-  });
+  } = useForm<ArtifactUpdate>();
   const watchCpe = watch("cpe");
 
   useEffect(() => {
@@ -165,32 +161,6 @@ export default function UpdateArtifactDialog({
               justifyContent="space-between"
               alignItems="center"
             >
-              <Typography variant="body2">Threats</Typography>
-              <Controller
-                name="threatList"
-                control={control}
-                defaultValue={[]}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    multiple
-                    renderValue={(selected) => selected.join(", ")}
-                    defaultValue={[]}
-                    sx={{ minWidth: 200, maxWidth: 400 }}
-                  >
-                    {threats.map((threat) => (
-                      <MenuItem key={threat._id} value={threat.name}>
-                        <Checkbox
-                          checked={
-                            getValues("threatList").indexOf(threat.name) > -1
-                          }
-                        />
-                        <ListItemText primary={threat.name} />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                )}
-              />
             </Box>
           </Stack>
         </DialogContent>

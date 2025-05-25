@@ -35,7 +35,6 @@ export interface ArtifactCreate {
   type: "image" | "log" | "source code" | "executable" | "library";
   url: string;
   version?: string;
-  threatList: string[];
   cpe?: string;
 }
 
@@ -44,6 +43,5 @@ export interface ArtifactUpdate {
   type: "image" | "log" | "source code" | "executable" | "library";
   url: string;
   version?: string;
-  threatList: string[];
   cpe?: string;
 }
