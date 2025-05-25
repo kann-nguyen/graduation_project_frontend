@@ -139,8 +139,7 @@ const ArtifactsSection = ({ currentProject }: ArtifactsSectionProps) => {
               position: 'relative',
               overflow: 'hidden'
             }}
-          >
-            {artifact.isScanning && (
+          >            {artifact.isScanning && (
               <Box sx={{ 
                 position: 'absolute', 
                 top: 0, 
@@ -158,6 +157,23 @@ const ArtifactsSection = ({ currentProject }: ArtifactsSectionProps) => {
               }}>
                 <CircularProgress size={12} color="inherit" />
                 SCANNING
+              </Box>
+            )}
+            
+            {artifact.state === "invalid" && (
+              <Box sx={{ 
+                position: 'absolute', 
+                top: artifact.isScanning ? 32 : 0, 
+                right: 0, 
+                bgcolor: alpha(theme.palette.error.main, 0.9),
+                color: 'white',
+                px: 1,
+                py: 0.5,
+                borderBottomLeftRadius: 8,
+                fontSize: '0.7rem',
+                fontWeight: 'bold',
+              }}>
+                INVALID
               </Box>
             )}
             

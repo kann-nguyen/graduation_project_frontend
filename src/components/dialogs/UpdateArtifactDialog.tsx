@@ -68,9 +68,14 @@ export default function UpdateArtifactDialog({
   }, [artifactId]);
   if (!artifact) return <></>;
   async function submit(data: ArtifactUpdate) {
+    if (!artifact) return; // Early return if artifact is not available
+    
     updateArtifactMutation.mutate({
       artifactId,
-      artifact: data,
+      artifact: {
+        ...data,
+        type: artifact.type, // Include the artifact type from the current artifact
+      },
     });
     setOpen(false);
   }

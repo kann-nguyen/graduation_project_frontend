@@ -152,7 +152,7 @@ function PageHeader({ artifact }: { artifact: Artifact }) {
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Chip 
           icon={<ArticleOutlined />} 
-          label={artifact.type.charAt(0).toUpperCase() + artifact.type.slice(1)}
+          label={artifact.type}
           color="primary"
           sx={{ 
             bgcolor: getArtifactTypeColor(artifact.type),
@@ -1432,8 +1432,13 @@ export default function ArtifactDetail() {
             <Grid item xs={12} lg={8}>              <Stack spacing={3}>
                 {/* Vulnerability Summary */}
                 <VulnerabilitiesSummary vulnerabilities={artifact.vulnerabilityList || []} />
-                
-                {/* Scan History Chart */}
+              
+                  {/* Threat Summary */}
+                <ThreatSummary threatList={artifact.threatList?.map(threat => 
+                  typeof threat === 'string' ? threat : threat._id
+                ) || []} />
+              
+                              {/* Scan History Chart */}
                 <Paper 
                   elevation={0} 
                   sx={{ 
@@ -1448,12 +1453,6 @@ export default function ArtifactDetail() {
                   </Typography>
                   <ScanHistoryChart scanHistory={artifact.scanHistory} />
                 </Paper>
-                
-                {/* Threat Summary */}
-                <ThreatSummary threatList={artifact.threatList.map(threat => 
-                  typeof threat === 'string' ? threat : threat._id
-                )} />
-              
               </Stack>
             </Grid>
             
@@ -1506,12 +1505,11 @@ export default function ArtifactDetail() {
                 <MoreVert />
               </IconButton>
             </Box>
-          </DialogTitle>
-          <DialogContent>
+          </DialogTitle>          <DialogContent>
             <SearchableThreatsSection 
-              threatList={artifact.threatList.map(threat => 
+              threatList={artifact.threatList?.map(threat => 
                 typeof threat === 'string' ? threat : threat._id
-              )} 
+              ) || []} 
             />
           </DialogContent>
         </Dialog>

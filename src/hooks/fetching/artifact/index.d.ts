@@ -41,6 +41,7 @@ export interface ArtifactCreate {
 
 export interface ArtifactUpdate {
   name: string;
+  type: "image" | "log" | "source code" | "executable" | "library";
   url: string;
   version?: string;
   threatList: string[];
