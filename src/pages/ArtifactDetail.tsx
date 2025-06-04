@@ -57,7 +57,7 @@ import {
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useParams, useNavigate } from "react-router-dom";
-import { useArtifactQuery } from "~/hooks/fetching/artifact/query";
+import { useArtifactQuery, useArtifactPhaseQuery } from "~/hooks/fetching/artifact/query";
 import { useThreatQuery } from "~/hooks/fetching/threat/query";
 import { useState, useMemo, useEffect, useContext, createContext } from "react";
 import ScanHistoryChart from "~/components/charts/ScanHistoryChart";
@@ -96,6 +96,9 @@ function PageHeader({ artifact }: { artifact: Artifact }) {
   const { currentProject } = useParams();
   const theme = useTheme();
   
+  // Get the phase that contains this artifact
+  const { data: phaseData, isLoading: isLoadingPhase } = useArtifactPhaseQuery(artifact._id);
+  
   const getArtifactTypeColor = (type: string) => {
     switch (type) {
       case "image": return theme.palette.info.main;
@@ -108,16 +111,23 @@ function PageHeader({ artifact }: { artifact: Artifact }) {
   };
   
   return (
-    <Box sx={{ mb: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+    <Box sx={{ mb: 4 }}>      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
         <Button 
           startIcon={<ArrowBack />} 
-          onClick={() => navigate(`/${encodeURIComponent(currentProject || '')}`)}
+          onClick={() => {
+            if (phaseData?.data?.phaseId && currentProject) {
+              navigate(`/${encodeURIComponent(currentProject)}/phases/${phaseData.data.phaseId}`);
+            } else {
+              // Fallback to project home if phase data is not available
+              navigate(`/${encodeURIComponent(currentProject || '')}`);
+            }
+          }}
           sx={{ mr: 2 }}
           variant="text"
           color="inherit"
+          disabled={isLoadingPhase}
         >
-          Back to phase
+          {isLoadingPhase ? 'Loading...' : `Back to ${phaseData?.data?.phaseName || 'phase'}`}
         </Button>
       
         <Box sx={{ flexGrow: 1 }} />

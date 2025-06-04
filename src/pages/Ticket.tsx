@@ -1,10 +1,13 @@
-import { Box } from "@mui/material";
+import { Box, Container, Paper, Typography, Toolbar, alpha } from "@mui/material";
 import { useParams } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
+import { BugReport } from "@mui/icons-material";
 import ExtendedTicketTable from "~/components/styled-components/TicketTable";
 import { useTicketsQuery } from "~/hooks/fetching/ticket/query";
 
 export default function Ticket() {
   const { currentProject } = useParams();
+  const theme = useTheme();
   const ticketQuery = useTicketsQuery(currentProject);
   const tickets = ticketQuery.data?.data ?? [];
 
@@ -19,24 +22,55 @@ export default function Ticket() {
   }
 
   return (
-    <Box 
-      component="main" 
-      sx={{
-        width: '100%',
-        flexGrow: 1,
-        p: 0,
-        m: 0,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        justifyContent: 'center',
-        px: 2,
-      }}
-    >
-      <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}> {/* Allow horizontal scrolling if content overflows */}
+    <Box sx={{ 
+      flexGrow: 1, 
+      minHeight: "100vh", 
+      width: "100%", 
+      overflow: "auto",
+      bgcolor: theme.palette.mode === 'dark' ? 'background.default' : alpha(theme.palette.primary.light, 0.04),
+    }}>
+      <Toolbar />
+      <Container sx={{ py: 3 }} maxWidth="xl">
+        {/* Page Header - Description Box */}
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 3, 
+            mb: 4, 
+            borderRadius: 2, 
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <Box 
+            sx={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: { xs: 80, md: 150 },
+              height: '100%',
+              opacity: 0.05,
+              display: { xs: 'none', md: 'block' }
+            }}
+          >
+            <BugReport sx={{ fontSize: 180, position: 'absolute', top: '50%', right: -20, transform: 'translateY(-50%)' }} />
+          </Box>
+          
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            <Typography variant="h4" fontWeight="bold">
+              Project Tickets
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
+              Track and manage project tickets, issues, and task assignments for {currentProject || "this project"}
+            </Typography>
+          </Box>
+        </Paper>
+
+        {/* Ticket Table with new layout */}
         <ExtendedTicketTable tickets={tickets} />
-      </Box>
+      </Container>
     </Box>
   );
 }

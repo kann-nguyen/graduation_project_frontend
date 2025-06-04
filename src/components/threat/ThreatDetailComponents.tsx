@@ -97,9 +97,8 @@ export const ThreatPageHeader = ({
   };
   
   const ticketId = getTicketId();
-  
-  const handleBackClick = () => {
-    navigate(`/${encodeURIComponent(currentProject || '')}/threats`);
+    const handleBackClick = () => {
+    navigate(-1);
   };
   
   return (
@@ -113,7 +112,7 @@ export const ThreatPageHeader = ({
           color="primary"
           size="medium"
         >
-          {'Back to threats list'}
+          {'Back to previous page'}
         </Button>
         
         <Box sx={{ flexGrow: 1 }} />

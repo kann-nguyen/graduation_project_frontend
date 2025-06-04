@@ -44,4 +44,5 @@ export interface ArtifactUpdate {
   url: string;
   version?: string;
   cpe?: string;
+  threatList?: string[];
 }

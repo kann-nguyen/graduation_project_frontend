@@ -72,10 +72,9 @@ const ArtifactsSection = ({ currentProject }: ArtifactsSectionProps) => {
         <ArticleOutlined sx={{ fontSize: 40, color: alpha(theme.palette.primary.main, 0.3), mb: 1 }} />
         <Typography variant="body1" color="text.secondary" gutterBottom>
           No artifacts found for this project
-        </Typography>
-        <Button 
+        </Typography>        <Button 
           component={RouterLink}
-          to={`/${encodeURIComponent(currentProject)}/phase`}
+          to={`/${encodeURIComponent(currentProject)}/phases`}
           variant="outlined" 
           size="small"
           sx={{ mt: 1 }}
