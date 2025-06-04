@@ -5,17 +5,40 @@ import {
   getArtifact,
   updateArtifact,
   updateArtifactRateScan,
+  getArtifactPhase,
 } from "~/hooks/fetching/artifact/axios";
 import { ArtifactUpdate } from ".";
 import { toast } from "~/utils/toast";
 
 export function useArtifactsQuery(projectName: string) {
-  return useQuery(["artifacts", projectName], () =>
-    getAllArtifacts(projectName)
+  return useQuery(
+    ["artifacts", projectName], 
+    () => getAllArtifacts(projectName),
+    {
+      // Poll every 3 seconds when any artifact is scanning
+      refetchInterval: (data) => {
+        const artifacts = data?.data || [];
+        const hasScanning = artifacts.some((artifact: any) => artifact.isScanning);
+        return hasScanning ? 3000 : false; // Poll every 3 seconds if scanning, otherwise no polling
+      },
+      refetchIntervalInBackground: true, // Continue polling even when tab is not focused
+    }
   );
 }
+
 export function useArtifactQuery(artifactId: string) {
-  return useQuery(["artifact", artifactId], () => getArtifact(artifactId));
+  return useQuery(
+    ["artifact", artifactId], 
+    () => getArtifact(artifactId),
+    {
+      // Poll every 3 seconds when the artifact is scanning
+      refetchInterval: (data) => {
+        const artifact = data?.data;
+        return artifact?.isScanning ? 3000 : false; // Poll every 3 seconds if scanning, otherwise no polling
+      },
+      refetchIntervalInBackground: true, // Continue polling even when tab is not focused
+    }
+  );
 }
 export function useUpdateArtifactMutation() {
   interface UpdateArtifact {
@@ -53,4 +76,14 @@ export function useUpdateArtifactRateScanMutation() {
       });
     },
   });
+}
+
+export function useArtifactPhaseQuery(artifactId: string) {
+  return useQuery(
+    ["artifact", artifactId, "phase"],
+    () => getArtifactPhase(artifactId),
+    {
+      enabled: !!artifactId,
+    }
+  );
 }

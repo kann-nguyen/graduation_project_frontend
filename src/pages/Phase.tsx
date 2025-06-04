@@ -24,44 +24,69 @@ export default function Phase() {
   const project = projectQuery.data?.data;
   if (!project) return <></>;
   const { phaseList } = project;
-  if (phaseList.length === 0) return <CreatePhaseTemplate />;
-  return (
+  if (phaseList.length === 0) return <CreatePhaseTemplate />;  return (
     <Box sx={{ flexGrow: 1 }}>
       <Toolbar />
       <Container sx={{ my: 4, pb: 4 }} maxWidth="xl">
-        <Stack spacing={4}>
-          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-            <Typography variant="h4">Phases</Typography>
-            <Stack direction="row" spacing={2}>
-              <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
-                Manage phase templates
-              </Button>
-              <Button 
-                variant="contained" 
-                color="success"
-                onClick={() => {
-                  setOpen(false); // Close the template dialog if open
-                  const timeout = setTimeout(() => {
-                    setPhaseDialogOpen(true);
-                  }, 100);
-                  return () => clearTimeout(timeout);
-                }}
-              >
-                Create new phase
-              </Button>
-            </Stack>
+        <Stack spacing={4}>          <Box sx={{ 
+            p: 3, 
+            bgcolor: 'background.paper', 
+            borderRadius: 2, 
+            border: '1px solid',
+            borderColor: 'divider'
+          }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+              <Typography variant="h5" fontWeight="bold">
+                {project.name}
+              </Typography>
+              
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                <Button variant="outlined" color="primary" size="small" onClick={() => setOpen(true)}>
+                  Manage phase templates
+                </Button>
+                <Button 
+                  variant="contained" 
+                  color="success"
+                  size="small"
+                  onClick={() => {
+                    setOpen(false); // Close the template dialog if open
+                    const timeout = setTimeout(() => {
+                      setPhaseDialogOpen(true);
+                    }, 100);
+                    return () => clearTimeout(timeout);
+                  }}
+                >
+                  Create new phase
+                </Button>
+              </Stack>
+            </Box>
+            
+            {project.description && (
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                {project.description}
+              </Typography>
+            )}
+            
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Total Phases:</strong> {phaseList.length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Created:</strong> {new Date(project.createdAt).toLocaleDateString()}
+              </Typography>
+              {project.updatedAt && (
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Last Updated:</strong> {new Date(project.updatedAt).toLocaleDateString()}
+                </Typography>
+              )}
+            </Box>
+            
             <ManageTemplateDialog open={open} setOpen={setOpen} />
             <CreatePhaseFromTemplateDialog open={phaseDialogOpen} setOpen={setPhaseDialogOpen} />
           </Box>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <PhaseBoard phases={phaseList} />
-            </Grid>
-            <Grid item xs={12} md={5}>
-              <PhaseTasksChart phases={phaseList} sx={{ minHeight: 400 }} />
-            </Grid>
-            <Grid item xs={12} md={7}>
-              <PhaseProgressChart phases={phaseList} sx={{ minHeight: 400 }} />
             </Grid>
           </Grid>
         </Stack>

@@ -6,7 +6,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   FormControlLabel,
+  InputLabel,
   ListItemText,
   MenuItem,
   Radio,
@@ -43,11 +45,7 @@ export default function UpdateArtifactDialog({
     watch,
     setValue,
     reset,
-  } = useForm<ArtifactUpdate>({
-    defaultValues: {
-      threatList: [],
-    },
-  });
+  } = useForm<ArtifactUpdate>();
   const watchCpe = watch("cpe");
 
   useEffect(() => {
@@ -62,15 +60,27 @@ export default function UpdateArtifactDialog({
   const [searchParams] = useSearchParams();
   const artifactId = searchParams.get("artifactId") ?? "";
   const artifactQuery = useArtifactQuery(artifactId);
-  const artifact = artifactQuery.data?.data;
-  useEffect(() => {
-    reset();
-  }, [artifactId]);
+  const artifact = artifactQuery.data?.data;  useEffect(() => {
+    if (artifact) {
+      reset({
+        name: artifact.name,
+        url: artifact.url,
+        version: artifact.version,
+        cpe: artifact.cpe,
+        threatList: artifact.threatList?.map(threat => threat._id) || [],
+      });
+    }
+  }, [artifactId, artifact, reset]);
   if (!artifact) return <></>;
   async function submit(data: ArtifactUpdate) {
+    if (!artifact) return; // Early return if artifact is not available
+    
     updateArtifactMutation.mutate({
       artifactId,
-      artifact: data,
+      artifact: {
+        ...data,
+        type: artifact.type, // Include the artifact type from the current artifact
+      },
     });
     setOpen(false);
   }
@@ -79,11 +89,9 @@ export default function UpdateArtifactDialog({
       <Box component="form" onSubmit={handleSubmit(submit)}>
         <DialogTitle>Update this artifact</DialogTitle>
         <DialogContent>
-          <Stack spacing={2}>
-            <Controller
+          <Stack spacing={2}>            <Controller
               name="name"
               control={control}
-              defaultValue={artifact.name}
               render={({ field }) => (
                 <TextField
                   {...field}
@@ -94,26 +102,32 @@ export default function UpdateArtifactDialog({
                   InputLabelProps={{ shrink: field.value ? true : false }}
                 />
               )}
-            />
-            <TextField
-              {...register("url", {
+            />            <Controller
+              name="url"
+              control={control}
+              rules={{
                 required: "Url is required",
-                pattern:
-                  /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/,
-              })}
-              defaultValue={artifact.url}
-              label="URL"
-              error={!!errors.url}
-              helperText={
-                errors.url?.type === "pattern"
-                  ? "Invalid URL"
-                  : errors.url?.message
-              }
-              required
-            />
-            <Controller
+                pattern: {
+                  value: /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/,
+                  message: "Invalid URL"
+                }
+              }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="URL"
+                  error={!!errors.url}
+                  helperText={
+                    errors.url?.type === "pattern"
+                      ? "Invalid URL"
+                      : errors.url?.message
+                  }
+                  required
+                  InputLabelProps={{ shrink: field.value ? true : false }}
+                />
+              )}
+            />            <Controller
               name="version"
-              defaultValue={artifact.version}
               control={control}
               render={({ field }) => (
                 <TextField
@@ -154,39 +168,44 @@ export default function UpdateArtifactDialog({
                   />
                 ))}
               </RadioGroup>
-            </Box>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <Typography variant="body2">Threats</Typography>
-              <Controller
-                name="threatList"
-                control={control}
-                defaultValue={[]}
-                render={({ field }) => (
+            </Box>            <Controller
+              name="threatList"
+              control={control}
+              defaultValue={artifact.threatList?.map(threat => threat._id) || []}
+              render={({ field }) => (
+                <FormControl fullWidth>
+                  <InputLabel id="threat-select-label">Associated Threats</InputLabel>
                   <Select
                     {...field}
+                    labelId="threat-select-label"
                     multiple
-                    renderValue={(selected) => selected.join(", ")}
-                    defaultValue={[]}
-                    sx={{ minWidth: 200, maxWidth: 400 }}
+                    value={field.value || []}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    label="Associated Threats"
+                    renderValue={(selected) => {
+                      const selectedThreats = threats.filter(threat => 
+                        (selected as string[]).includes(threat._id)
+                      );
+                      return selectedThreats.length > 0 
+                        ? `${selectedThreats.length} threat(s) selected`
+                        : 'No threats selected';
+                    }}
                   >
                     {threats.map((threat) => (
-                      <MenuItem key={threat._id} value={threat.name}>
-                        <Checkbox
-                          checked={
-                            getValues("threatList").indexOf(threat.name) > -1
-                          }
+                      <MenuItem key={threat._id} value={threat._id}>
+                        <Checkbox 
+                          checked={(field.value || []).includes(threat._id)}
                         />
-                        <ListItemText primary={threat.name} />
+                        <ListItemText 
+                          primary={threat.name}
+                          secondary={`Type: ${threat.type} | Score: ${threat.score.total}`}
+                        />
                       </MenuItem>
                     ))}
                   </Select>
-                )}
-              />
-            </Box>
+                </FormControl>
+              )}
+            />
           </Stack>
         </DialogContent>
         <DialogActions>

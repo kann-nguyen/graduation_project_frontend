@@ -1,7 +1,7 @@
 import { Done, Pending, ErrorOutline, CheckCircle } from "@mui/icons-material";
 import { Chip, PaletteColor, Tooltip, useTheme } from "@mui/material";
 
-export default function TicketStatusChip({ status }: { status: string }) {
+export default function TicketStatusChip({ status, size = "small" }: { status: string; size?: "small" | "medium" | "large" }) {
   const theme = useTheme();
   
   const statusConfig: Record<string, {
@@ -49,19 +49,27 @@ export default function TicketStatusChip({ status }: { status: string }) {
         label={label} 
         color={color} 
         icon={icon}
+        size={size === "large" ? "medium" : "small"}
         sx={{
           '& .MuiChip-icon': {
-            fontSize: '1rem',
-            mr: -0.5
+            fontSize: size === "large" ? '1.3rem' : '1rem',
+            mr: size === "large" ? 0.5 : -0.5
           },
-          fontWeight: 500,
+          fontSize: size === "large" ? '1.05rem' : undefined,
+          height: size === "large" ? 40 : undefined,
+          fontWeight: size === "large" ? 600 : 500,          borderWidth: size === "large" ? 2 : 1,
+          borderStyle: 'solid',
+          borderColor: color === 'default' 
+            ? theme.palette.grey[300] 
+            : theme.palette[color].main,
+          boxShadow: size === "large" 
+            ? `0 2px 8px rgba(0,0,0,0.08)` 
+            : 'none',
           transition: 'all 0.2s ease',
           '&:hover': {
-            boxShadow: `0 0 0 1px ${
-              color === 'default' 
-                ? theme.palette.grey[500] 
-                : (theme.palette[color] as PaletteColor).main
-            }`
+            boxShadow: color === 'default' 
+              ? `0 0 0 1px ${theme.palette.grey[500]}` 
+              : `0 0 0 2px ${theme.palette[color].light}`
           }
         }}
       />

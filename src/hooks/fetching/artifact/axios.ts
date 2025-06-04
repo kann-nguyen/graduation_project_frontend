@@ -32,3 +32,10 @@ export async function updateArtifactRateScan(
   });
   return response.data;
 }
+
+export async function getArtifactPhase(
+  artifactId: string
+): PromiseServer<{ phaseId: string; phaseName: string }> {
+  const response = await api.get(`/artifact/${artifactId}/phase`);
+  return response.data;
+}

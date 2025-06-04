@@ -66,7 +66,7 @@ import { useThreatQuery } from "~/hooks/fetching/threat/query";
 import { typeOptions } from "~/utils/threat-display";
 import { useState, useEffect } from "react";
 import EditTicketDialog from "~/components/dialogs/EditTicketDialog";
-import { getThreat } from "~/hooks/fetching/threat/axios";
+import { getThreat, getDetailedThreatInfo } from "~/hooks/fetching/threat/axios";
 
 dayjs.extend(relativeTime);
 
@@ -83,10 +83,10 @@ function PageHeader({ ticket }: { ticket: Ticket }) {
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const { currentProject } = useParams();
+  const theme = useTheme();
   
   return (
-    <Box sx={{ mb: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+    <Box sx={{ mb: 4 }}>      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
         <Button 
           startIcon={<ArrowBack />} 
           onClick={() => navigate(`/${encodeURIComponent(currentProject || '')}/tickets`)}
@@ -98,7 +98,20 @@ function PageHeader({ ticket }: { ticket: Ticket }) {
         </Button>
       
         
-        <Box sx={{ flexGrow: 1 }} />
+        <Box sx={{ flexGrow: 1 }} />        {/* Moved status to top right and made it larger with enhanced styling */}
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            mr: 2,
+            px: 1,
+            py: 0.5,
+            borderRadius: 1,
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'
+          }}
+        >
+          <TicketStatusChip status={ticket.status} size="large" />
+        </Box>
         
         <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)}>
           <MoreVert />
@@ -122,13 +135,21 @@ function PageHeader({ ticket }: { ticket: Ticket }) {
           </MenuItem>
         </Menu>
       </Box>
-      
-      <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
+        <Typography 
+        variant="h4" 
+        fontWeight="bold" 
+        sx={{ 
+          mb: 1,
+          fontSize: { xs: '1.8rem', sm: '2rem', md: '2.2rem' },
+          lineHeight: 1.2,
+          letterSpacing: '-0.3px',
+          color: theme.palette.mode === 'dark' ? theme.palette.primary.light : theme.palette.primary.dark
+        }}
+      >
         {ticket.title}
       </Typography>
       
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-        <TicketStatusChip status={ticket.status} />
         <Chip 
           icon={getPriorityIcon(ticket.priority)} 
           label={`${ticket.priority.charAt(0).toUpperCase()}${ticket.priority.slice(1)} Priority`} 
@@ -490,6 +511,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
   const { currentProject } = useParams();
   const encodedUrl = encodeURIComponent(currentProject);
   const [threat, setThreat] = useState<Threat | null>(null);
+  const [detailedInfo, setDetailedInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const theme = useTheme();
@@ -498,11 +520,18 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
     const fetchThreat = async () => {
       try {
         setIsLoading(true);
+        
+        // Fetch basic threat data
         const response = await getThreat(threatId);
         setThreat(response.data);
+        
+        // Fetch detailed threat info including CVE, CWE, and CVSS data
+        const detailsResponse = await getDetailedThreatInfo(threatId);
+        setDetailedInfo(detailsResponse.data);
+        
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err : new Error("Failed to fetch threat"));
+        setError(err instanceof Error ? err : new Error("Failed to fetch threat information"));
       } finally {
         setIsLoading(false);
       }
@@ -543,6 +572,26 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
   }
 
   const threatTypeInfo = typeOptions.find(opt => opt.name === threat.type);
+  
+  // Color coding based on threat score
+  const getScoreSeverity = (score: number) => {
+    if (score >= 4) return { color: 'error', label: 'Critical' };
+    if (score >= 3) return { color: 'warning', label: 'High' };
+    if (score >= 2) return { color: 'info', label: 'Medium' };
+    return { color: 'success', label: 'Low' };
+  };
+  
+  const scoreSeverity = getScoreSeverity(threat.score?.total || 0);
+
+  // STRIDE type descriptions for tooltips
+  const strideDescriptions = {
+    "Spoofing": "Identity theft to gain unauthorized access",
+    "Tampering": "Malicious modification of data or code",
+    "Repudiation": "Ability to deny performing an action without verification",
+    "Information Disclosure": "Exposure of sensitive data to unauthorized users",
+    "Denial of Service": "Preventing legitimate users from accessing a service",
+    "Elevation of Privilege": "Gaining higher access rights than intended"
+  };
 
   return (
     <Card 
@@ -550,7 +599,8 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
       sx={{ 
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: 2,
-        overflow: 'visible'
+        overflow: 'visible',
+        background: `linear-gradient(to right, ${alpha(theme.palette.background.paper, 0.95)}, ${theme.palette.background.paper})`,
       }}
     >
       <Box 
@@ -571,33 +621,135 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
             <Typography variant="body2" color="text.secondary">
               STRIDE Type:
             </Typography>
-            <Tooltip title={threatTypeInfo?.description || ""}>
+            <Tooltip title={threatTypeInfo?.description || strideDescriptions[threat.type as keyof typeof strideDescriptions] || ""}>
               <Chip
                 label={threat.type || 'Unknown'}
                 size="small"
                 variant="outlined"
+                color="primary"
               />
             </Tooltip>
+            
+            <Box sx={{ ml: 'auto' }}>
+              <Tooltip title={`DREAD Score: ${threat.score?.total || 'N/A'}/5`}>
+                <Chip
+                  label={`${scoreSeverity.label} Risk`}
+                  size="small"
+                  color={scoreSeverity.color as "error" | "warning" | "info" | "success"}
+                  sx={{ fontWeight: 'bold' }}
+                />
+              </Tooltip>
+            </Box>
           </Box>
         </Box>
-      </Box>
-
-      <CardContent sx={{ p: 3 }}>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Description
-        </Typography>
-        <Typography variant="body2">
-          {threat.description || 'No description available'}
-        </Typography>
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+      </Box>      <CardContent sx={{ p: 3 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            {/* CVE ID */}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                CVE ID
+              </Typography>
+              <Chip 
+                label={detailedInfo?.relatedVulnerability?.cveId || 'N/A'} 
+                color="primary"
+                variant="outlined"
+                size="medium"
+                sx={{ fontWeight: 'medium', fontSize: '0.9rem', height: 28 }}
+              />
+            </Box>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                CWE IDs
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {detailedInfo?.relatedVulnerability?.cwes && detailedInfo.relatedVulnerability.cwes.length > 0 ? (
+                  detailedInfo.relatedVulnerability.cwes.map((cwe: string, index: number) => (
+                    <Chip
+                      key={index}
+                      label={cwe}
+                      size="small"
+                      variant="outlined"
+                      color="secondary"
+                      sx={{ fontSize: '0.75rem' }}
+                    />
+                  ))
+                ) : (
+                  <Typography variant="body2" color="text.secondary">No CWE information available</Typography>
+                )}
+              </Box>
+            </Box>
+          </Grid>
+            <Grid item xs={12} sm={6}>
+            {/* CVSS Score */}            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                CVSS Score
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Chip 
+                  label={detailedInfo?.relatedVulnerability?.score || 'N/A'} 
+                  color={
+                    !detailedInfo?.relatedVulnerability?.score ? 'default' :
+                    detailedInfo?.relatedVulnerability?.score >= 9 ? 'error' :
+                    detailedInfo?.relatedVulnerability?.score >= 7 ? 'warning' :
+                    detailedInfo?.relatedVulnerability?.score >= 4 ? 'info' : 'success'
+                  }
+                  size="small"
+                  sx={{ fontWeight: 'bold' }}
+                />
+                {detailedInfo?.relatedVulnerability?.severity && (
+                  <Typography variant="body2" color="text.secondary">
+                    {detailedInfo.relatedVulnerability.severity}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+            
+            {/* DREAD Risk Score - Positioned directly below CVSS Score */}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                DREAD Risk Score
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Chip 
+                  label={threat.score?.total !== undefined ? `${threat.score.total}/5` : 'N/A'}
+                  color={scoreSeverity.color as "error" | "warning" | "info" | "success"}
+                  size="small"
+                  sx={{ fontWeight: 'bold' }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  {threat.score?.total !== undefined ? scoreSeverity.label : 'No'} Risk
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <Divider sx={{ my: 1 }} />
+          </Grid>
+          
+          <Grid item xs={12}>
+            {/* Description - Brief Version */}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Description
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                {threat.description || 'No description available'}
+              </Typography>
+            </Box>          </Grid>
+        </Grid>
+        
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
           <Button 
             variant="outlined" 
             size="small"
             component={Link}
             href={`/${encodedUrl}/threats/${threat._id}`}
             sx={{ textDecoration: 'none' }}
+            startIcon={<Security fontSize="small" />}
           >
-            View Details
+            View Threat Details
           </Button>
         </Box>
       </CardContent>

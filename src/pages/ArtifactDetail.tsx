@@ -16,6 +16,7 @@ import {
   FilterList,
   PieChart as PieChartIcon,
   Assessment,
+  Timeline,
 } from "@mui/icons-material";
 import {
   Box,
@@ -56,9 +57,10 @@ import {
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useParams, useNavigate } from "react-router-dom";
-import { useArtifactQuery } from "~/hooks/fetching/artifact/query";
+import { useArtifactQuery, useArtifactPhaseQuery } from "~/hooks/fetching/artifact/query";
 import { useThreatQuery } from "~/hooks/fetching/threat/query";
 import { useState, useMemo, useEffect, useContext, createContext } from "react";
+import ScanHistoryChart from "~/components/charts/ScanHistoryChart";
 import { Artifact, Vulnerability } from "~/hooks/fetching/artifact";
 import UpdateArtifactDialog from "~/components/dialogs/UpdateArtifactDialog";
 import { useSearchParams } from "react-router-dom";
@@ -94,6 +96,9 @@ function PageHeader({ artifact }: { artifact: Artifact }) {
   const { currentProject } = useParams();
   const theme = useTheme();
   
+  // Get the phase that contains this artifact
+  const { data: phaseData, isLoading: isLoadingPhase } = useArtifactPhaseQuery(artifact._id);
+  
   const getArtifactTypeColor = (type: string) => {
     switch (type) {
       case "image": return theme.palette.info.main;
@@ -106,16 +111,23 @@ function PageHeader({ artifact }: { artifact: Artifact }) {
   };
   
   return (
-    <Box sx={{ mb: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+    <Box sx={{ mb: 4 }}>      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
         <Button 
           startIcon={<ArrowBack />} 
-          onClick={() => navigate(`/${encodeURIComponent(currentProject || '')}`)}
+          onClick={() => {
+            if (phaseData?.data?.phaseId && currentProject) {
+              navigate(`/${encodeURIComponent(currentProject)}/phases/${phaseData.data.phaseId}`);
+            } else {
+              // Fallback to project home if phase data is not available
+              navigate(`/${encodeURIComponent(currentProject || '')}`);
+            }
+          }}
           sx={{ mr: 2 }}
           variant="text"
           color="inherit"
+          disabled={isLoadingPhase}
         >
-          Back to phase
+          {isLoadingPhase ? 'Loading...' : `Back to ${phaseData?.data?.phaseName || 'phase'}`}
         </Button>
       
         <Box sx={{ flexGrow: 1 }} />
@@ -150,7 +162,7 @@ function PageHeader({ artifact }: { artifact: Artifact }) {
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Chip 
           icon={<ArticleOutlined />} 
-          label={artifact.type.charAt(0).toUpperCase() + artifact.type.slice(1)}
+          label={artifact.type}
           color="primary"
           sx={{ 
             bgcolor: getArtifactTypeColor(artifact.type),
@@ -1427,16 +1439,30 @@ export default function ArtifactDetail() {
           <PageHeader artifact={artifact} />
           
           <Grid container spacing={3}>
-            <Grid item xs={12} lg={8}>
-              <Stack spacing={3}>
+            <Grid item xs={12} lg={8}>              <Stack spacing={3}>
                 {/* Vulnerability Summary */}
                 <VulnerabilitiesSummary vulnerabilities={artifact.vulnerabilityList || []} />
-                
-                {/* Threat Summary */}
-                <ThreatSummary threatList={artifact.threatList.map(threat => 
-                  typeof threat === 'string' ? threat : threat._id
-                )} />
               
+                  {/* Threat Summary */}
+                <ThreatSummary threatList={artifact.threatList?.map(threat => 
+                  typeof threat === 'string' ? threat : threat._id
+                ) || []} />
+              
+                              {/* Scan History Chart */}
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    p: 3, 
+                    mb: 3,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography variant="h5" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Timeline sx={{ mr: 1 }} /> Vulnerability Scan History
+                  </Typography>
+                  <ScanHistoryChart scanHistory={artifact.scanHistory} />
+                </Paper>
               </Stack>
             </Grid>
             
@@ -1489,12 +1515,11 @@ export default function ArtifactDetail() {
                 <MoreVert />
               </IconButton>
             </Box>
-          </DialogTitle>
-          <DialogContent>
+          </DialogTitle>          <DialogContent>
             <SearchableThreatsSection 
-              threatList={artifact.threatList.map(threat => 
+              threatList={artifact.threatList?.map(threat => 
                 typeof threat === 'string' ? threat : threat._id
-              )} 
+              ) || []} 
             />
           </DialogContent>
         </Dialog>

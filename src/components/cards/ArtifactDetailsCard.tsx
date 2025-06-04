@@ -152,8 +152,7 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
                     cursor: 'pointer'
                   }}
                   onClick={() => handleViewArtifact(item._id)}
-                >
-                  {item.isScanning && (
+                >                  {item.isScanning && (
                     <Box sx={{ 
                       position: 'absolute', 
                       top: 0, 
@@ -174,7 +173,34 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
                     </Box>
                   )}
                   
-                  <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+                  {item.state === "invalid" && (
+                    <Box sx={{ 
+                      position: 'absolute', 
+                      top: item.isScanning ? 32 : 0, 
+                      right: 0, 
+                      bgcolor: alpha(theme.palette.error.main, 0.9),
+                      color: 'white',
+                      px: 1,
+                      py: 0.5,
+                      borderBottomLeftRadius: 8,
+                      fontSize: '0.7rem',
+                      fontWeight: 'bold',
+                    }}>
+                      INVALID
+                    </Box>
+                  )}
+                  
+                  <Box sx={{ 
+                    position: 'absolute', 
+                    top: 8, 
+                    right: 8,
+                    zIndex: 10,
+                    // Adjust position when badges are present
+                    ...(item.isScanning || item.state === "invalid") && {
+                      top: item.isScanning && item.state === "invalid" ? 72 : 
+                           item.isScanning || item.state === "invalid" ? 40 : 8
+                    }
+                  }}>
                     <IconButton 
                       size="small" 
                       sx={{ 
