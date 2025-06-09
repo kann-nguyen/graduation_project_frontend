@@ -74,8 +74,7 @@ export default function VulnDetailsCard({
             </Stack>
           )
         }
-      />
-      <CardContent>
+      />      <CardContent>
         <Typography variant="body1">
           <b>Description: </b>
           {vuln.description}
@@ -95,6 +94,47 @@ export default function VulnDetailsCard({
           <b>CWEs: </b>
           {vuln.cwes.join(", ")}
         </Typography>
+        
+        {/* Enhanced threat information */}
+        {vuln.threatType && (
+          <>
+            <Divider sx={{ mt: 2, mb: 2 }} />
+            <Typography variant="body1">
+              <b>Primary Threat Type: </b>
+              {vuln.threatType}
+            </Typography>
+          </>
+        )}
+        
+        {vuln.riskLevel && (
+          <>
+            <Divider sx={{ mt: 2, mb: 2 }} />
+            <Typography variant="body1">
+              <b>Risk Level: </b>
+              {vuln.riskLevel}
+            </Typography>
+          </>
+        )}
+        
+        {vuln.confidence && (
+          <>
+            <Divider sx={{ mt: 2, mb: 2 }} />
+            <Typography variant="body1">
+              <b>Threat Mapping Confidence: </b>
+              {Math.round(vuln.confidence * 100)}%
+            </Typography>
+          </>
+        )}
+        
+        {vuln.threatCategories && vuln.threatCategories.length > 1 && (
+          <>
+            <Divider sx={{ mt: 2, mb: 2 }} />
+            <Typography variant="body1">
+              <b>Alternative Threat Categories: </b>
+              {vuln.threatCategories.slice(1).join(", ")}
+            </Typography>
+          </>
+        )}
       </CardContent>
       <CardActions>
         <Box

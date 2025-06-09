@@ -33,6 +33,7 @@ import { Artifact, Vulnerability } from "~/hooks/fetching/artifact";
 import { Threat } from "~/hooks/fetching/threat";
 import { Docker } from "~/icons/Icons";
 import ThreatDetailsDialog from "../dialogs/ThreatDetailsDialog";
+import EnhancedVulnerabilityCard from "./EnhancedVulnerabilityCard";
 interface VulnTabPanelProps {
   list: Vulnerability[];
   value: number;
@@ -55,45 +56,14 @@ function VulnTabPanel(props: VulnTabPanelProps) {
     };
   }
   return (
-    <List sx={{ overflowY: "scroll", height: "80%" }} dense>
+    <Box sx={{ overflowY: "scroll", height: "80%", px: 1 }}>
       {list.map((item) => (
-        <ListItem key={item._id}>
-          <ListItemIcon>
-            <BugReport />
-          </ListItemIcon>
-          <ListItemText
-            primary={<Typography variant="body1">{item.cveId}</Typography>}
-            secondary={
-              <>
-                <Typography variant="body2">
-                  <b>Description: </b>
-                  {item.description}
-                </Typography>
-                <Typography variant="body2">
-                  <b>Score: </b>
-                  {item.score}
-                </Typography>
-                <Typography variant="body2">
-                  <b>Severity: </b>
-                  {item.severity}
-                </Typography>
-                <Typography variant="body2">
-                  <b>CWEs: </b>
-                  {item.cwes.map((cwe) => (
-                    <Box display="inline-flex" alignItems="center">
-                      <Typography variant="body2">{cwe}</Typography>
-                      <IconButton onClick={viewCwe(cwe)}>
-                        <Info />
-                      </IconButton>
-                    </Box>
-                  ))}
-                </Typography>
-              </>
-            }
-          />
-        </ListItem>
+        <EnhancedVulnerabilityCard
+          key={item._id}
+          vulnerability={item}
+        />
       ))}
-    </List>
+    </Box>
   );
 }
 function ThreatTabPanel(props: ThreatTabPanelProps) {

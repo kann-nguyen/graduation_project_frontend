@@ -16,6 +16,8 @@ import {
   FilterList,
   PieChart as PieChartIcon,
   Assessment,
+  Timeline,
+  Shield,
 } from "@mui/icons-material";
 import {
   Box,
@@ -70,6 +72,8 @@ import SeverityStatistics from "~/components/charts/SeverityStatisticsChart";
 import ThreatStatistics from "~/components/charts/ThreatStatisticsChart";
 import { useAccountContext } from '~/hooks/general';
 import { useUpdateArtifactRateScanMutation } from '~/hooks/fetching/artifact/query';
+import EnhancedVulnerabilityCard from '~/components/cards/EnhancedVulnerabilityCard';
+import { getAllThreatTypes, getThreatTypeInfo } from '~/utils/vulnerability-display';
 
 dayjs.extend(relativeTime);
 
@@ -757,8 +761,10 @@ function SearchableVulnerabilitiesList({ vulnerabilities }: { vulnerabilities: V
   const theme = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSeverities, setSelectedSeverities] = useState<string[]>([]);
+  const [selectedThreatTypes, setSelectedThreatTypes] = useState<string[]>([]);
   
   const severityOptions = ['critical', 'high', 'medium', 'low', 'negligible'];
+  const threatTypeOptions = getAllThreatTypes();
   
   const filteredVulnerabilities = useMemo(() => {
     return vulnerabilities.filter(vuln => {
@@ -772,9 +778,14 @@ function SearchableVulnerabilitiesList({ vulnerabilities }: { vulnerabilities: V
       const matchesSeverity = selectedSeverities.length === 0 || 
         selectedSeverities.includes(vuln.severity.toLowerCase());
       
-      return matchesSearch && matchesSeverity;
+      // Filter by threat type
+      const matchesThreatType = selectedThreatTypes.length === 0 || 
+        (vuln.threatType && selectedThreatTypes.includes(vuln.threatType)) ||
+        (vuln.threatCategories && vuln.threatCategories.some(type => selectedThreatTypes.includes(type)));
+      
+      return matchesSearch && matchesSeverity && matchesThreatType;
     });
-  }, [vulnerabilities, searchTerm, selectedSeverities]);
+  }, [vulnerabilities, searchTerm, selectedSeverities, selectedThreatTypes]);
   
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
@@ -809,8 +820,7 @@ function SearchableVulnerabilitiesList({ vulnerabilities }: { vulnerabilities: V
           }}
           sx={{ mb: 2 }}
         />
-        
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
           <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
             <FilterList sx={{ fontSize: 18, mr: 0.5 }} /> Filter by severity:
           </Typography>
@@ -837,103 +847,85 @@ function SearchableVulnerabilitiesList({ vulnerabilities }: { vulnerabilities: V
           
           {selectedSeverities.length > 0 && (
             <Chip 
-              label="Clear filters" 
+              label="Clear severity filters" 
               onClick={() => setSelectedSeverities([])}
               variant="outlined"
               size="small"
             />
           )}
         </Box>
-      </Box>
-      
-      {filteredVulnerabilities.length > 0 ? (
-        <List sx={{ width: '100%' }}>
-          {filteredVulnerabilities.map((vuln) => (
-            <Paper
-              key={vuln._id}
-              elevation={0}
-              sx={{
-                mb: 2,
-                border: `1px solid ${theme.palette.divider}`,
-                borderLeft: `5px solid ${getSeverityColor(vuln.severity)}`,
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <ListItem
-                alignItems="flex-start"
-                sx={{
-                  py: 2
+        
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+            <Shield sx={{ fontSize: 18, mr: 0.5 }} /> Filter by threat type:
+          </Typography>
+          {threatTypeOptions.map((threatType) => {
+            const threatInfo = getThreatTypeInfo(threatType);
+            return (
+              <Chip
+                key={threatType}
+                label={threatInfo.name}
+                onClick={() => {
+                  setSelectedThreatTypes(prev => 
+                    prev.includes(threatType) 
+                      ? prev.filter(t => t !== threatType) 
+                      : [...prev, threatType]
+                  )
                 }}
-              >
-                <ListItemIcon sx={{ minWidth: 56 }}>
-                  <Avatar
-                    sx={{
-                      bgcolor: getSeverityColor(vuln.severity),
-                      color: 'white',
-                      width: 40,
-                      height: 40,
-                    }}
-                  >
-                    <BugReport />
-                  </Avatar>
-                </ListItemIcon>
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                      <Typography variant="h6" component="span">
-                        {vuln.cveId}
-                      </Typography>
-                      <Chip
-                        label={vuln.severity}
-                        size="small"
-                        sx={{
-                          backgroundColor: getSeverityColor(vuln.severity),
-                          color: 'white',
-                          fontWeight: 'bold'
-                        }}
-                      />
-                      {vuln.score && (
-                        <Chip
-                          label={`CVSS: ${vuln.score.toFixed(1)}`}
-                          size="small"
-                          variant="outlined"
-                        />
-                      )}
-                    </Box>
+                color={selectedThreatTypes.includes(threatType) ? 'primary' : 'default'}
+                variant={selectedThreatTypes.includes(threatType) ? 'filled' : 'outlined'}
+                sx={{ 
+                  bgcolor: selectedThreatTypes.includes(threatType) ? threatInfo.color : 'transparent',
+                  borderColor: threatInfo.color,
+                  color: selectedThreatTypes.includes(threatType) ? 'white' : 'inherit',
+                  '&:hover': {
+                    bgcolor: selectedThreatTypes.includes(threatType) 
+                      ? alpha(threatInfo.color, 0.8) 
+                      : alpha(threatInfo.color, 0.1)
                   }
-                  secondary={
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {vuln.description}
-                      </Typography>
-                      {vuln.cwes?.length > 0 && (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                          {vuln.cwes.slice(0, 3).map((cwe, index) => (
-                            <Chip
-                              key={index}
-                              label={cwe}
-                              size="small"
-                              variant="outlined"
-                            />
-                          ))}
-                          {vuln.cwes.length > 3 && (
-                            <Chip
-                              label={`+${vuln.cwes.length - 3} more`}
-                              size="small"
-                              variant="outlined"
-                              color="primary"
-                            />
-                          )}
-                        </Box>
-                      )}
-                    </Box>
-                  }
-                />
-              </ListItem>
-            </Paper>
+                }}
+              />
+            );
+          })}
+          
+          {selectedThreatTypes.length > 0 && (
+            <Chip 
+              label="Clear threat filters" 
+              onClick={() => setSelectedThreatTypes([])}
+              variant="outlined"
+              size="small"
+            />
+          )}
+          
+          {(selectedSeverities.length > 0 || selectedThreatTypes.length > 0) && (
+            <Chip 
+              label="Clear all filters" 
+              onClick={() => {
+                setSelectedSeverities([]);
+                setSelectedThreatTypes([]);
+              }}
+              variant="outlined"
+              size="small"
+              sx={{ 
+                bgcolor: theme.palette.error.main,
+                color: 'white',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.error.main, 0.8)
+                }
+              }}
+            />
+          )}
+        </Box>
+      </Box>
+        {filteredVulnerabilities.length > 0 ? (
+        <Box sx={{ width: '100%' }}>
+          {filteredVulnerabilities.map((vuln) => (
+            <EnhancedVulnerabilityCard
+              key={vuln._id}
+              vulnerability={vuln}
+            />
           ))}
-        </List>
+        </Box>
       ) : (
         <Box sx={{ textAlign: 'center', py: 3 }}>
           <Typography color="text.secondary">

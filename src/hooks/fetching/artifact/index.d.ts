@@ -8,6 +8,11 @@ export interface Vulnerability {
   cwes: string[];
   cvssVector?: string;
   _id: string;
+  // Enhanced threat mapping fields from vulnerability standardization
+  threatType?: string;
+  threatCategories?: string[];
+  riskLevel?: string;
+  confidence?: number;
 }
 
 export interface Artifact {
