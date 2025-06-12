@@ -63,7 +63,7 @@ export default function Ticket() {
               Project Tickets
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-              Track and manage project tickets, issues, and task assignments for {currentProject || "this project"}
+              Track and manage project tickets for {currentProject || "this project"}
             </Typography>
           </Box>
         </Paper>

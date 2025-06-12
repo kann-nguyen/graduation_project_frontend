@@ -9,6 +9,7 @@ import {
   SecurityOutlined,
   PeopleOutlined,
   DashboardOutlined,
+  Code, 
 } from "@mui/icons-material";
 
 export default function ManagerSidebarItems() {
@@ -42,6 +43,11 @@ export default function ManagerSidebarItems() {
         text="Ticket"
         icon={<FactCheckOutlined />}
         path={`/${encodedUrl}/tickets`}
+      />
+      <Item
+        text="Scripts"
+        icon={<Code />}
+        path={`/${encodedUrl}/scripts`}
       />
     </List>
   );
