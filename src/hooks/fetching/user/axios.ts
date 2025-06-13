@@ -45,3 +45,13 @@ export async function getAllUsers(): PromiseServer<User[]> {
   const response = await api.get(`/user/getAll`);
   return response.data;
 }
+export async function adminUpdateUser(
+  userId: string,
+  updateData: { name?: string; skills?: string[] }
+): PromiseServer<null> {
+  const response = await api.patch(
+    `/user/${userId}/admin-update`,
+    updateData
+  );
+  return response.data;
+}

@@ -12,4 +12,5 @@ export interface User {
   activityHistory: ActivityHistory[];
   account: Account;
   projectIn: Project[];
+  skills: ("Spoofing" | "Tampering" | "Repudiation" | "Information Disclosure" | "Denial of Service" | "Elevation of Privilege")[];
 }

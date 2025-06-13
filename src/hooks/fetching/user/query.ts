@@ -9,6 +9,7 @@ import {
   getUserByAccountId,
   getUserById,
   updateUser,
+  adminUpdateUser,
 } from "./axios";
 
 export function useUserByAccountIdQuery() {
@@ -64,4 +65,30 @@ export function useUpdateUserMutation() {
 
 export function useGetAllUsersQuery() {
   return useQuery(["users"], getAllUsers);
+}
+
+export function useAdminUpdateUserMutation() {
+  interface AdminUpdateUserParams {
+    userId: string;
+    updateData: { name?: string; skills?: string[] };
+  }
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+  return useMutation({
+    mutationFn: ({ userId, updateData }: AdminUpdateUserParams) =>
+      adminUpdateUser(userId, updateData),
+    onSuccess: (response) => {
+      toast(response, enqueueSnackbar, () => {
+        // Invalidate all relevant queries to ensure data refresh
+        queryClient.invalidateQueries(["users"]);
+        queryClient.invalidateQueries(["userInfo"]);
+        queryClient.invalidateQueries(["member"]);
+        queryClient.invalidateQueries(["accounts"]);
+        queryClient.invalidateQueries(["account"]);
+        // Force refetch immediately for specific queries
+        queryClient.refetchQueries(["users"]);
+        queryClient.refetchQueries(["accounts"]);
+      });
+    },
+  });
 }
