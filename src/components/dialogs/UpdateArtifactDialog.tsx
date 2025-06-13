@@ -66,8 +66,7 @@ export default function UpdateArtifactDialog({
         name: artifact.name,
         url: artifact.url,
         version: artifact.version,
-        cpe: artifact.cpe,
-        threatList: artifact.threatList?.map(threat => threat._id) || [],
+        cpe: artifact.cpe
       });
     }
   }, [artifactId, artifact, reset]);
@@ -168,44 +167,7 @@ export default function UpdateArtifactDialog({
                   />
                 ))}
               </RadioGroup>
-            </Box>            <Controller
-              name="threatList"
-              control={control}
-              defaultValue={artifact.threatList?.map(threat => threat._id) || []}
-              render={({ field }) => (
-                <FormControl fullWidth>
-                  <InputLabel id="threat-select-label">Associated Threats</InputLabel>
-                  <Select
-                    {...field}
-                    labelId="threat-select-label"
-                    multiple
-                    value={field.value || []}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    label="Associated Threats"
-                    renderValue={(selected) => {
-                      const selectedThreats = threats.filter(threat => 
-                        (selected as string[]).includes(threat._id)
-                      );
-                      return selectedThreats.length > 0 
-                        ? `${selectedThreats.length} threat(s) selected`
-                        : 'No threats selected';
-                    }}
-                  >
-                    {threats.map((threat) => (
-                      <MenuItem key={threat._id} value={threat._id}>
-                        <Checkbox 
-                          checked={(field.value || []).includes(threat._id)}
-                        />
-                        <ListItemText 
-                          primary={threat.name}
-                          secondary={`Type: ${threat.type} | Score: ${threat.score.total}`}
-                        />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-            />
+            </Box>            
           </Stack>
         </DialogContent>
         <DialogActions>
