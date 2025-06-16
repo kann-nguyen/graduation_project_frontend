@@ -18,6 +18,7 @@ import {
   Divider,
   Card,
   CardContent,
+  CircularProgress,
   Button
 } from "@mui/material";
 import {
@@ -28,7 +29,10 @@ import {
   Timeline,
   ArticleOutlined,
   BugReport,
-  Security
+  Security,
+  Assignment as AssignmentIcon,
+  Build as BuildIcon,
+  VerifiedUser
 } from "@mui/icons-material";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import Chart from "~/components/charts/ActivityHistoryChart";
@@ -42,6 +46,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { useUserByAccountIdQuery } from '~/hooks/fetching/user/query';
 import ProjectSelector from "~/components/layout-components/ProjectSelector";
 import ArtifactsSection from "~/components/layout-components/ArtifactsSection";
+import { useProjectWorkflowStatsQuery, useArtifactsByWorkflowStepQuery } from '~/hooks/fetching/workflow/query';
+import { WorkflowStats } from '~/hooks/fetching/workflow';
 
 // Extend dayjs with relative time
 dayjs.extend(relativeTime);
@@ -59,6 +65,18 @@ export default function ManagerHomePage() {
   const theme = useTheme();
   const userQuery = useUserByAccountIdQuery();
   const user = userQuery.data?.data;
+  
+  // Get workflow statistics
+  const { 
+    data: workflowStatsData, 
+    isLoading: isLoadingWorkflowStats 
+  } = useProjectWorkflowStatsQuery(currentProject || '');
+  const workflowStats: WorkflowStats | null | undefined = workflowStatsData?.data;
+  
+  // Get artifacts in the current workflow step
+  const { 
+    data: artifactsInProgressData 
+  } = useArtifactsByWorkflowStepQuery(currentProject || '', undefined);
 
   // If data is not loaded yet
   if (!user) {
@@ -174,6 +192,28 @@ export default function ManagerHomePage() {
               </Grid>
             </Grid>
           </Box>
+        </Paper>
+        
+        {/* Project Artifacts */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 4,
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper'
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" fontWeight="bold">
+              Project Artifacts
+            </Typography>
+            
+          </Box>
+          
+          {/* Artifacts Grid Section */}
+          <ArtifactsSection currentProject={currentProject || ''} />
         </Paper>
 
         {/* Recent Activity */}
@@ -428,63 +468,63 @@ export default function ManagerHomePage() {
             />
           </Box>
         </Paper>        {/* Workflow Analytics */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            mb: 4,
-            borderRadius: 2,
-            border: `1px solid ${theme.palette.divider}`,
-            bgcolor: 'background.paper'
-          }}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Timeline sx={{ mr: 1, color: theme.palette.primary.main }} />
-              <Typography variant="h6" fontWeight="bold">
-                Security Workflow
-              </Typography>
-            </Box>
-            <Button
-              component={RouterLink}
-              to={`/${currentProject}/workflow`}
-              variant="contained"
-              color="primary"
-              startIcon={<Timeline />}
-              size="small"
-            >
-              View Analytics
-            </Button>
-          </Box>
-          
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Monitor the progress of your security workflow across all artifacts. Track detection, classification,
-            assignment, remediation, and verification stages to ensure effective security management.
-          </Typography>
-        </Paper>
 
-        {/* Project Artifacts */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            mb: 4,
-            borderRadius: 2,
-            border: `1px solid ${theme.palette.divider}`,
-            bgcolor: 'background.paper'
-          }}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" fontWeight="bold">
-              Project Artifacts
-            </Typography>
-            
-          </Box>
-          
-          {/* Artifacts Grid Section */}
-          <ArtifactsSection currentProject={currentProject || ''} />
-        </Paper>
       </Container>
     </Box>
   );
+}
+
+// Helper component for workflow step chips
+interface WorkflowStepChipProps {
+  label: string;
+  count: number;
+  color: string;
+  icon: React.ReactElement;
+}
+
+const WorkflowStepChip: React.FC<WorkflowStepChipProps> = ({ label, count, color, icon }) => {
+  return (
+    <Chip 
+      icon={icon}
+      label={
+        <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+          {label}
+          <Box 
+            component="span" 
+            sx={{ 
+              ml: 0.5,
+              bgcolor: 'background.paper',
+              color,
+              px: 0.75,
+              borderRadius: 1,
+              fontSize: '0.75rem',
+              fontWeight: 'bold'
+            }}
+          >
+            {count}
+          </Box>
+        </Box>
+      }
+      sx={{ 
+        bgcolor: alpha(color, 0.1),
+        color,
+        border: `1px solid ${alpha(color, 0.2)}`,
+        '& .MuiChip-icon': {
+          color: 'inherit'
+        }
+      }}
+    />
+  );
+};
+
+// Helper function to get color based on workflow step
+function getWorkflowStepColor(step: number): "primary" | "info" | "secondary" | "warning" | "success" {
+  switch (step) {
+    case 1: return "primary"; // Detection
+    case 2: return "info";    // Classification
+    case 3: return "secondary"; // Assignment
+    case 4: return "warning"; // Remediation
+    case 5: return "success"; // Verification
+    default: return "primary";
+  }
 }

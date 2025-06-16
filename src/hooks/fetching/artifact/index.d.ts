@@ -15,6 +15,8 @@ export interface ScanHistoryEntry {
   vulnerabilities: Vulnerability[];
 }
 
+import { WorkflowCycle } from "../workflow";
+
 export interface Artifact {
   rateReScan: number;
   _id: string;
@@ -28,6 +30,12 @@ export interface Artifact {
   isScanning?: boolean;
   state: "valid" | "invalid";
   scanHistory?: ScanHistoryEntry[];
+  
+  // Workflow fields
+  currentWorkflowStep?: number;
+  workflowCyclesCount?: number;
+  workflowCycles?: WorkflowCycle[];
+  currentWorkflowCycle?: WorkflowCycle;
 }
 
 export interface ArtifactCreate {

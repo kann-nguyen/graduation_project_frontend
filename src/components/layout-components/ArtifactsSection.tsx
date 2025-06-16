@@ -10,7 +10,9 @@ import {
   Chip, 
   Button,
   CircularProgress,
-  Tooltip
+  Tooltip,
+  LinearProgress,
+  Divider
 } from '@mui/material';
 import { 
   ArticleOutlined, 
@@ -20,11 +22,24 @@ import {
   Code,
   ContentPaste,
   GridView,
-  LibraryBooks 
+  LibraryBooks,
+  Timeline,
+  Loop as LoopIcon,
+  Check as CheckIcon,
+  Assignment as AssignmentIcon,
+  Build as BuildIcon,
+  VerifiedUser
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useArtifactsQuery } from '~/hooks/fetching/artifact/query';
+import { WorkflowCycle } from '~/hooks/fetching/workflow';
 import { Docker } from '~/icons/Icons';
+import { Artifact } from '~/hooks/fetching/artifact';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+// Extend dayjs with relative time
+dayjs.extend(relativeTime);
 
 interface ArtifactsSectionProps {
   currentProject: string;
@@ -120,17 +135,218 @@ const ArtifactsSection = ({ currentProject }: ArtifactsSectionProps) => {
         return theme.palette.primary.main;
     }
   };
+    // Helper function to render workflow status for an artifact
+  const renderWorkflowStatus = (artifact: Artifact) => {
+    // Check if artifact has workflow data
+    if (!artifact.currentWorkflowStep && !artifact.workflowCycles) {
+      return (
+        <Box sx={{ textAlign: 'center', py: 1, bgcolor: alpha(theme.palette.grey[500], 0.1), borderRadius: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            No workflow data available
+          </Typography>
+        </Box>
+      );
+    }
+    
+    const currentStep = artifact.currentWorkflowStep || 1;
+    const totalSteps = 5; // Total steps in the workflow
+    const progress = (currentStep / totalSteps) * 100;
+    const isCompleted = artifact.workflowCycles?.some((cycle: any) => cycle.completedAt);
+    
+    // Get step name and color
+    const getStepInfo = (step: number) => {
+      switch(step) {
+        case 1: return { name: 'Detection', color: theme.palette.primary.main, icon: <BugReport fontSize="small" /> };
+        case 2: return { name: 'Classification', color: theme.palette.info.main, icon: <Security fontSize="small" /> };
+        case 3: return { name: 'Assignment', color: theme.palette.secondary.main, icon: <AssignmentIcon fontSize="small" /> };
+        case 4: return { name: 'Remediation', color: theme.palette.warning.main, icon: <BuildIcon fontSize="small" /> };
+        case 5: return { name: 'Verification', color: theme.palette.success.main, icon: <VerifiedUser fontSize="small" /> };
+        default: return { name: 'Unknown', color: theme.palette.grey[500], icon: <LoopIcon fontSize="small" /> };
+      }
+    };
+    
+    const stepInfo = getStepInfo(currentStep);
+    
+    // Get cycle information
+    const cycles = artifact.workflowCycles || [];
+    const cycleCount = cycles.length;
+    
+    return (
+      <Box>
+        {/* Step Information */}        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 1 
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Chip
+              icon={stepInfo.icon}
+              label={`${stepInfo.name}`}
+              size="small"
+              sx={{
+                bgcolor: alpha(stepInfo.color, 0.1),
+                color: stepInfo.color,
+                '& .MuiChip-icon': {
+                  color: 'inherit'
+                }
+              }}
+            />
+            
+            {/* {isCompleted && (
+              <Chip
+                icon={<CheckIcon fontSize="small" />}
+                label="Completed"
+                size="small"
+                color="success"
+                variant="outlined"
+                sx={{ ml: 1, height: 24 }}
+              />
+            )} */}
+          </Box>
+          
+          <Tooltip title="Workflow cycles">
+            <Chip
+              icon={<LoopIcon fontSize="small" />}
+              label={cycleCount || 1}
+              size="small"
+              sx={{ height: 24 }}
+            />
+          </Tooltip>
+        </Box>
+          {/* Workflow Steps Visualization */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1, mb: 2 }}>          
+          {[1, 2, 3, 4, 5].map((step) => {
+            // Only mark as completed if step is less than currentStep or the workflow is completed
+            const stepCompleted = step < currentStep;
+            const isCurrentStep = step === currentStep;
+            const getStepIcon = (s: number) => {
+              switch(s) {
+                case 1: return <BugReport fontSize="small" />;
+                case 2: return <Security fontSize="small" />;
+                case 3: return <AssignmentIcon fontSize="small" />;
+                case 4: return <BuildIcon fontSize="small" />;
+                case 5: return <VerifiedUser fontSize="small" />;
+                default: return null;
+              }
+            };
+            
+            return (
+              <Tooltip key={step} title={getStepInfo(step).name}>
+                <Box
+                  sx={{
+                    width: 30, 
+                    height: 30, 
+                    borderRadius: '50%', 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: stepCompleted 
+                      ? alpha(theme.palette.success.main, 0.1) 
+                      : isCurrentStep 
+                        ? alpha(getStepInfo(step).color, 0.1) 
+                        : alpha(theme.palette.grey[300], 0.5),
+                    border: `2px solid ${
+                      stepCompleted 
+                        ? theme.palette.success.main 
+                        : isCurrentStep 
+                          ? getStepInfo(step).color 
+                          : theme.palette.grey[300]
+                    }`,
+                    color: stepCompleted 
+                      ? theme.palette.success.main 
+                      : isCurrentStep 
+                        ? getStepInfo(step).color 
+                        : theme.palette.grey[500]
+                  }}
+                >
+                  {stepCompleted ? <CheckIcon fontSize="small" /> : getStepIcon(step)}
+                </Box>
+              </Tooltip>
+            );
+          })}
+        </Box>
+        
+        {/* Progress Bar */}        
+        <Box sx={{ width: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ width: '100%', mr: 1 }}>
+              <LinearProgress
+                variant="determinate"
+                value={(currentStep - 1) * 20}
+                sx={{
+                  height: 4,
+                  borderRadius: 3,
+                  bgcolor: alpha(theme.palette.grey[500], 0.1),
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: isCompleted ? theme.palette.success.main : stepInfo.color,
+                  }
+                }}
+              />
+            </Box>
+            <Box sx={{ minWidth: 35 }}>
+              <Typography variant="body2" color="text.secondary">
+                {`${Math.round((currentStep - 1) * 20)}%`}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+        
+        {/* Additional stats for specific steps */}
+        {currentStep === 1 && artifact.vulnerabilityList?.length > 0 && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            {artifact.vulnerabilityList.length} vulnerabilities detected
+          </Typography>
+        )}
+        
+        {currentStep === 2 && artifact.threatList?.length > 0 && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            {artifact.threatList.length} threats classified
+          </Typography>
+        )}        {/* Step-specific information - Assignment step */}
+        {currentStep === 3 && artifact.currentWorkflowCycle?.assignment?.numberTicketsAssigned && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            {artifact.currentWorkflowCycle.assignment.numberTicketsAssigned} tickets assigned
+          </Typography>
+        )}
+        
+        {/* Step-specific information - Remediation step */}
+        {currentStep === 4 && artifact.currentWorkflowCycle?.remediation && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            {artifact.currentWorkflowCycle.remediation.numberTicketsSubmitted || 0} of {
+              (artifact.currentWorkflowCycle.remediation.numberTicketsSubmitted || 0) + 
+              (artifact.currentWorkflowCycle.remediation.numberTicketsNotSubmitted || 0)
+            } tickets submitted
+          </Typography>
+        )}
+        
+        {/* Step-specific information - Verification step */}
+        {currentStep === 5 && artifact.currentWorkflowCycle?.verification && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            {artifact.currentWorkflowCycle.verification.numberTicketsResolved || 0} tickets resolved
+          </Typography>
+        )}
+        
+        {/* Display last updated date if workflow data exists */}
+        {artifact.currentWorkflowCycle?.startedAt && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, fontStyle: 'italic' }}>
+            Updated {dayjs(artifact.currentWorkflowCycle.startedAt).fromNow()}
+          </Typography>
+        )}
+      </Box>
+    );
+  };
   
   return (
     <Grid container spacing={2}>
       {artifacts.map((artifact) => (
-        <Grid item xs={12} sm={6} md={4} key={artifact._id}>
-          <Card 
+        <Grid item xs={12} sm={6} md={4} key={artifact._id}>          <Card 
             sx={{ 
               height: '100%',
+              minHeight: '280px',
               display: 'flex',
               flexDirection: 'column',
-              transition: 'transform 0.2s, box-shadow 0.2s',
+              transition: 'all 0.2s ease-in-out',
               '&:hover': {
                 transform: 'translateY(-4px)',
                 boxShadow: 4
@@ -138,7 +354,7 @@ const ArtifactsSection = ({ currentProject }: ArtifactsSectionProps) => {
               position: 'relative',
               overflow: 'hidden'
             }}
-          >            {artifact.isScanning && (
+          >{artifact.isScanning && (
               <Box sx={{ 
                 position: 'absolute', 
                 top: 0, 
@@ -176,7 +392,7 @@ const ArtifactsSection = ({ currentProject }: ArtifactsSectionProps) => {
               </Box>
             )}
             
-            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2, '&:last-child': { pb: 2 } }}>
               <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <Box 
@@ -222,33 +438,46 @@ const ArtifactsSection = ({ currentProject }: ArtifactsSectionProps) => {
                   </Tooltip>
                 )}
               </Box>
-              
-              <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Tooltip title="Vulnerabilities">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <BugReport fontSize="small" color="error" />
-                      <Typography variant="body2">
-                        {artifact.vulnerabilityList?.length || 0} Vulnerabilities
-                      </Typography>
-                    </Box>
-                  </Tooltip>
-                  
-                  <Tooltip title="Threats">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                      <Security fontSize="small" color="primary" />
-                      <Typography variant="body2">
-                        {artifact.threatList?.length || 0} Threats
-                      </Typography>
-                    </Box>
-                  </Tooltip>
-                </Box>
+                {/* Security Stats */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Tooltip title="Vulnerabilities">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <BugReport fontSize="small" color="error" />
+                    <Typography variant="body2">
+                      {artifact.vulnerabilityList?.length || 0} Vulnerabilities
+                    </Typography>
+                  </Box>
+                </Tooltip>
                 
+                <Tooltip title="Threats">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Security fontSize="small" color="primary" />
+                    <Typography variant="body2">
+                      {artifact.threatList?.length || 0} Threats
+                    </Typography>
+                  </Box>
+                </Tooltip>
+              </Box>
+              
+              {/* Workflow Status Section */}
+              <Divider sx={{ mb: 2 }} />
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" fontWeight="medium" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Timeline fontSize="small" sx={{ mr: 0.5 }} /> Workflow Status
+                </Typography>
+                
+                {/* Display current workflow step */}
+                {renderWorkflowStatus(artifact)}
+              </Box>
+              
+              <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                   component={RouterLink}
                   to={`/${encodeURIComponent(currentProject)}/artifact/${artifact._id}`}
                   endIcon={<NavigateNext />}
                   size="small"
+                  variant="contained"
+                  color="primary"
                 >
                   Details
                 </Button>
