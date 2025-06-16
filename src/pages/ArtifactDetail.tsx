@@ -19,7 +19,17 @@ import {
   Timeline,
   WorkOutline,
   Refresh as RefreshIcon,
+  Check as CheckIcon,
+  Schedule as ScheduleIcon,
+  Loop as LoopIcon,
+  Assignment as AssignmentIcon,
+  Build as BuildIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon
 } from "@mui/icons-material";
+import React, { useState, useMemo, useEffect, useContext, createContext } from "react";
+import { WorkflowCycle, WorkflowStats } from "~/hooks/fetching/workflow";
+import { useArtifactWorkflowHistoryQuery } from "~/hooks/fetching/workflow/query";
 import {
   Box,
   Button,
@@ -61,7 +71,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { useParams, useNavigate } from "react-router-dom";
 import { useArtifactQuery, useArtifactPhaseQuery } from "~/hooks/fetching/artifact/query";
 import { useThreatQuery } from "~/hooks/fetching/threat/query";
-import { useState, useMemo, useEffect, useContext, createContext } from "react";
 import ScanHistoryChart from "~/components/charts/ScanHistoryChart";
 import { Artifact, Vulnerability } from "~/hooks/fetching/artifact";
 import UpdateArtifactDialog from "~/components/dialogs/UpdateArtifactDialog";
@@ -74,8 +83,8 @@ import SeverityStatistics from "~/components/charts/SeverityStatisticsChart";
 import ThreatStatistics from "~/components/charts/ThreatStatisticsChart";
 import { useAccountContext } from '~/hooks/general';
 import { useUpdateArtifactRateScanMutation } from '~/hooks/fetching/artifact/query';
+import { Collapse } from "@mui/material";
 import WorkflowPanel from '~/components/workflow/WorkflowPanel';
-import { useArtifactWorkflowHistoryQuery, useProjectWorkflowStatsQuery } from '~/hooks/fetching/workflow/query';
 
 dayjs.extend(relativeTime);
 
@@ -1441,9 +1450,11 @@ export default function ArtifactDetail() {
       >
         <Container sx={{ py: 4 }} maxWidth="xl">
           <PageHeader artifact={artifact} />
-          
-          <Grid container spacing={3}>
+            <Grid container spacing={3}>
             <Grid item xs={12} lg={8}>              <Stack spacing={3}>
+                {/* Workflow Panel - Moved to the top */}
+                <WorkflowPanelSection artifactId={artifact._id} />
+                
                 {/* Vulnerability Summary */}
                 <VulnerabilitiesSummary vulnerabilities={artifact.vulnerabilityList || []} />
               
@@ -1451,9 +1462,6 @@ export default function ArtifactDetail() {
                 <ThreatSummary threatList={artifact.threatList?.map(threat => 
                   typeof threat === 'string' ? threat : threat._id
                 ) || []} />
-                
-                {/* Workflow Panel */}
-                <WorkflowPanelSection artifactId={artifact._id} />
               
                 {/* Scan History Chart */}
                 <Paper 
@@ -1522,7 +1530,8 @@ export default function ArtifactDetail() {
                 <MoreVert />
               </IconButton>
             </Box>
-          </DialogTitle>          <DialogContent>
+          </DialogTitle>
+          <DialogContent>
             <SearchableThreatsSection 
               threatList={artifact.threatList?.map(threat => 
                 typeof threat === 'string' ? threat : threat._id
@@ -1618,7 +1627,7 @@ function WorkflowPanelSection({ artifactId }: { artifactId: string }) {
         }}
       >
         <Typography variant="h5" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <WorkOutline sx={{ mr: 1 }} /> Workflow Status
+          <WorkOutline sx={{ mr: 1 }} /> Security Workflow Process
         </Typography>
         <Box sx={{ py: 4, textAlign: 'center' }}>
           <Typography color="text.secondary" paragraph>
@@ -1645,9 +1654,645 @@ function WorkflowPanelSection({ artifactId }: { artifactId: string }) {
     }
   }
   
-  return <WorkflowPanel 
-    workflowCycles={workflowData} 
-    isLoading={false} 
-    error={null} 
-  />;
+  // Create a custom Workflow Panel with horizontal steps
+  // Enhanced to show more details and highlight the current step
+  return (
+    <Paper 
+      elevation={0}
+      sx={{ 
+        p: 3, 
+        border: `1px solid ${theme.palette.divider}`,
+        borderRadius: 2
+      }}
+    >
+      <HorizontalWorkflowPanel 
+        workflowCycles={workflowData} 
+      />
+    </Paper>
+  );
+}
+
+// Horizontal Workflow Panel Component
+function HorizontalWorkflowPanel({ workflowCycles }: { workflowCycles: WorkflowCycle[] }) {
+  const theme = useTheme();
+  const [selectedStep, setSelectedStep] = useState<number>(0); // Track selected step (0 = none)
+  
+  if (!workflowCycles || workflowCycles.length === 0) {
+    return (
+      <Box sx={{ p: 4, textAlign: 'center' }}>
+        <Typography variant="body1" color="text.secondary">
+          No workflow data available
+        </Typography>
+      </Box>
+    );
+  }
+  
+  // Sort cycles by cycleNumber to ensure they are in order
+  const sortedCycles = [...workflowCycles].sort((a, b) => a.cycleNumber - b.cycleNumber);
+  
+  // Get the latest cycle
+  const latestCycle = sortedCycles[sortedCycles.length - 1];
+  const currentStep = latestCycle.currentStep || 1;
+  
+  // Icons and labels for each step
+  const stepData = [
+    { 
+      label: "Detection", 
+      icon: <BugReport />,
+      color: theme.palette.primary.main,
+      data: latestCycle.detection,
+      metrics: latestCycle.detection ? [
+        { label: "Vulnerabilities", value: latestCycle.detection.numberVuls || 0 }
+      ] : []
+    },
+    { 
+      label: "Classification", 
+      icon: <Security />,
+      color: theme.palette.info.main,
+      data: latestCycle.classification,
+      metrics: latestCycle.classification ? [
+        { label: "Threats", value: latestCycle.classification.numberThreats || 0 }
+      ] : []
+    },
+    { 
+      label: "Assignment", 
+      icon: <AssignmentIcon />,
+      color: theme.palette.secondary.main,
+      data: latestCycle.assignment,
+      metrics: latestCycle.assignment ? [
+        { label: "Assigned", value: latestCycle.assignment.numberTicketsAssigned || 0 },
+        { label: "Unassigned", value: latestCycle.assignment.numberTicketsNotAssigned || 0 }
+      ] : []
+    },
+    { 
+      label: "Remediation", 
+      icon: <BuildIcon />,
+      color: theme.palette.warning.main,
+      data: latestCycle.remediation,
+      metrics: latestCycle.remediation ? [
+        { label: "Submitted", value: latestCycle.remediation.numberTicketsSubmitted || 0 },
+        { label: "Not Submitted", value: latestCycle.remediation.numberTicketsNotSubmitted || 0 }
+      ] : []
+    },
+    { 
+      label: "Verification", 
+      icon: <VerifiedUser />,
+      color: theme.palette.success.main,
+      data: latestCycle.verification,
+      metrics: latestCycle.verification ? [
+        { label: "Resolved", value: latestCycle.verification.numberTicketsResolved || 0 },
+        { label: "Returned", value: latestCycle.verification.numberTicketsReturnedToProcessing || 0 }
+      ] : []
+    }
+  ];
+
+  return (
+    <>
+      <Typography variant="h5" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <LoopIcon sx={{ mr: 1 }} /> Security Workflow Process
+      </Typography>
+        <Grid container spacing={1} alignItems="flex-start" sx={{ mb: 2 }}>
+        <Grid item xs={12}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            alignItems: 'center', 
+            mb: 1
+          }}>
+            <Typography variant="subtitle1">
+              Current Cycle: {latestCycle.cycleNumber}
+            </Typography>
+            <Chip 
+              size="small" 
+              label={latestCycle.completedAt ? 'Completed' : 'In Progress'}
+              color={latestCycle.completedAt ? 'success' : 'primary'}
+            />
+          </Box>
+        </Grid>
+        
+        {/* Horizontal Step Container - Only Labels */}
+        {stepData.map((step, index) => {
+          const stepNumber = index + 1;
+          const isActive = currentStep === stepNumber;
+          const isCompleted = stepNumber < currentStep;
+          const isPending = stepNumber > currentStep;
+          const isSelected = selectedStep === stepNumber;
+          
+          return (
+            <Grid item xs={12} sm={2.4} key={index}>
+              <Paper
+                elevation={0}
+                onClick={() => setSelectedStep(stepNumber === selectedStep ? 0 : stepNumber)}
+                sx={{
+                  p: 1.5,
+                  backgroundColor: 
+                    isSelected ? alpha(step.color, 0.15) :
+                    isActive ? alpha(step.color, 0.1) : 
+                    isCompleted ? alpha(theme.palette.success.main, 0.05) : 
+                    alpha(theme.palette.grey[200], 0.5),
+                  border: `1px solid ${
+                    isSelected ? step.color :
+                    isActive ? step.color : 
+                    isCompleted ? theme.palette.success.main : 
+                    theme.palette.divider
+                  }`,
+                  borderRadius: 2,
+                  transition: 'all 0.2s ease-in-out',
+                  position: 'relative',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    boxShadow: 1,
+                    borderColor: isSelected ? step.color : theme.palette.primary.main
+                  },
+                  '&::after': (isActive || isCompleted || isSelected) ? {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '4px',
+                    backgroundColor: isSelected ? step.color : isActive ? step.color : theme.palette.success.main,
+                    borderTopLeftRadius: 2,
+                    borderTopRightRadius: 2,
+                  } : {}
+                }}
+              >
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center'
+                }}>
+                  <Typography 
+                    variant="subtitle2" 
+                    fontWeight={isSelected || isActive ? 'bold' : 'medium'}
+                    sx={{ 
+                      color: isSelected ? step.color : 
+                             isActive ? step.color : 
+                             isCompleted ? theme.palette.success.main : 
+                             'text.secondary',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <Box component="span" 
+                      sx={{ 
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '50%',
+                        width: 24,
+                        height: 24,
+                        bgcolor: isSelected ? step.color :
+                                isActive ? step.color : 
+                                isCompleted ? theme.palette.success.main : 
+                                'transparent',
+                        color: (isActive || isCompleted || isSelected) ? 'white' : 'text.secondary',
+                        border: isPending ? `1px solid ${theme.palette.divider}` : 'none',
+                        mr: 1,
+                        fontSize: '0.75rem'
+                      }}
+                    >
+                      {isCompleted ? <CheckIcon fontSize="small" /> : stepNumber}
+                    </Box>
+                    {step.label}
+                  </Typography>
+                  
+                  {step.icon}
+                </Box>
+              </Paper>
+            </Grid>
+          );
+        })}
+      </Grid>
+      
+      {/* Step Details Box - Shows when a step is selected */}
+      {selectedStep > 0 && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 3,
+            border: `1px solid ${stepData[selectedStep-1].color}`,
+            borderRadius: 2,
+            backgroundColor: alpha(stepData[selectedStep-1].color, 0.05)
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="h6" sx={{ 
+              color: stepData[selectedStep-1].color,
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              {stepData[selectedStep-1].icon}
+              <Box component="span" sx={{ ml: 1 }}>
+                {stepData[selectedStep-1].label} Details
+              </Box>
+            </Typography>
+            
+            <Chip 
+              size="small"
+              label={
+                selectedStep < currentStep ? 'Completed' : 
+                selectedStep === currentStep ? 'In Progress' : 
+                'Not Started'
+              }
+              color={
+                selectedStep < currentStep ? 'success' :
+                selectedStep === currentStep ? 'primary' :
+                'default'
+              }
+            />
+          </Box>
+          
+          <Divider sx={{ mb: 2 }} />
+          
+          <Grid container spacing={3}>
+            {/* Step Metrics with more details */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle2" gutterBottom>
+                Metrics
+              </Typography>
+              
+              {stepData[selectedStep-1].metrics.length > 0 ? (
+                stepData[selectedStep-1].metrics.map((metric, idx) => (
+                  <Box 
+                    key={idx} 
+                    sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 1,
+                      p: 1,
+                      bgcolor: alpha(theme.palette.background.default, 0.5),
+                      borderRadius: 1
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      {metric.label}:
+                    </Typography>
+                    <Typography variant="body1" fontWeight="medium">
+                      {metric.value}
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                <Box sx={{ 
+                  p: 2, 
+                  textAlign: 'center', 
+                  bgcolor: alpha(theme.palette.background.default, 0.5),
+                  borderRadius: 1
+                }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No metrics available for this step
+                  </Typography>
+                </Box>
+              )}
+            </Grid>
+            
+            {/* Step Timing Information */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle2" gutterBottom>
+                Timing Information
+              </Typography>
+              
+              <Box sx={{ 
+                p: 2, 
+                bgcolor: alpha(theme.palette.background.default, 0.5),
+                borderRadius: 1
+              }}>
+                {stepData[selectedStep-1].data?.completedAt ? (
+                  <>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Completed:</Typography>
+                      <Typography variant="body2">
+                        {dayjs(stepData[selectedStep-1].data?.completedAt).format('MMM D, YYYY, h:mm A')}
+                      </Typography>
+                    </Box>
+                    {selectedStep > 1 && stepData[selectedStep-2].data?.completedAt && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2" color="text.secondary">Duration:</Typography>
+                        <Typography variant="body2">
+                          {dayjs(stepData[selectedStep-1].data?.completedAt).from(
+                            dayjs(stepData[selectedStep-2].data?.completedAt), true
+                          )}
+                        </Typography>
+                      </Box>
+                    )}
+                  </>
+                ) : selectedStep === currentStep ? (
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ 
+                      color: stepData[selectedStep-1].color,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <LoopIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      Currently in progress
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      This step has not been started yet
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            
+            </Grid>
+          </Grid>
+        </Paper>
+      )}
+      
+      {/* Workflow History Section */}
+      {workflowCycles.length > 1 && (
+        <WorkflowHistoryTimeline cycles={sortedCycles.slice(0, -1).reverse()} />
+      )}
+    </>
+  );
+}
+
+// WorkflowHistoryTimeline Component - Updated to include dates for all steps
+function WorkflowHistoryTimeline({ cycles }: { cycles: WorkflowCycle[] }) {
+  const theme = useTheme();
+  const [expanded, setExpanded] = useState<string | false>(false);
+
+  const handleExpandClick = (cycleId: string) => {
+    setExpanded(expanded === cycleId ? false : cycleId);
+  };
+
+  if (!cycles || cycles.length === 0) return null;
+
+  return (
+    <>
+      <Typography variant="h6" sx={{ mt: 4, mb: 3, display: 'flex', alignItems: 'center' }}>
+        <Timeline sx={{ mr: 1 }} /> Workflow History
+      </Typography>
+      
+      <Box sx={{ pl: 2 }}>
+        {cycles.map((cycle, index) => (
+          <Paper
+            key={cycle.cycleNumber}
+            elevation={0}
+            sx={{
+              mb: 2,
+              borderRadius: 2,
+              overflow: 'hidden',
+              border: `1px solid ${theme.palette.divider}`,
+            }}
+          >
+            {/* Cycle Header */}
+            <Box
+              sx={{
+                p: 2,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                bgcolor: expanded === `cycle-${cycle.cycleNumber}` ? 
+                  alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                cursor: 'pointer'
+              }}
+              onClick={() => handleExpandClick(`cycle-${cycle.cycleNumber}`)}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <LoopIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+                <Typography variant="subtitle1" fontWeight="medium">
+                  Cycle #{cycle.cycleNumber}
+                </Typography>
+                {cycle.completedAt && (
+                  <Chip
+                    size="small"
+                    label="Completed"
+                    color="success"
+                    variant="outlined"
+                    sx={{ ml: 2 }}
+                  />
+                )}
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                  {dayjs(cycle.startedAt).format('MMM D, YYYY')}
+                </Typography>
+                {expanded === `cycle-${cycle.cycleNumber}` ? 
+                  <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />
+                }
+              </Box>
+            </Box>
+            
+            {/* Expanded Cycle Details */}
+            <Collapse in={expanded === `cycle-${cycle.cycleNumber}`}>
+              <Box sx={{ p: 2, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
+                <Grid container spacing={2}>
+                  {/* Calculate dates for steps that don't have completedAt */}
+                  {(() => {
+                    // Find the most recent date from completed steps to use for incomplete steps
+                    let lastCompletedDate = cycle.startedAt;
+                    
+                    // Keep track of the last valid date for each step
+                    if (cycle.detection?.completedAt) {
+                      lastCompletedDate = cycle.detection.completedAt;
+                    }
+                    const classificationDate = cycle.classification?.completedAt || lastCompletedDate;
+                    if (cycle.classification?.completedAt) {
+                      lastCompletedDate = cycle.classification.completedAt;
+                    }
+                    const assignmentDate = cycle.assignment?.completedAt || lastCompletedDate;
+                    if (cycle.assignment?.completedAt) {
+                      lastCompletedDate = cycle.assignment.completedAt;
+                    }
+                    const remediationDate = cycle.remediation?.completedAt || lastCompletedDate;
+                    if (cycle.remediation?.completedAt) {
+                      lastCompletedDate = cycle.remediation.completedAt;
+                    }
+                    const verificationDate = cycle.verification?.completedAt || lastCompletedDate;
+                    
+                    return (
+                      <>
+                        {/* Detection Step */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <StepDetailCard
+                            title="Detection"
+                            icon={<BugReport fontSize="small" color="primary" />}
+                            completed={!!cycle.detection?.completedAt}
+                            date={cycle.detection?.completedAt || cycle.startedAt}
+                            metrics={[
+                              { label: "Vulnerabilities", value: cycle.detection?.numberVuls || 0 }
+                            ]}
+                          />
+                        </Grid>
+                        
+                        {/* Classification Step */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <StepDetailCard
+                            title="Classification"
+                            icon={<Security fontSize="small" color="info" />}
+                            completed={!!cycle.classification?.completedAt}
+                            date={classificationDate}
+                            metrics={[
+                              { label: "Threats", value: cycle.classification?.numberThreats || 0 }
+                            ]}
+                          />
+                        </Grid>
+                        
+                        {/* Assignment Step */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <StepDetailCard
+                            title="Assignment"
+                            icon={<AssignmentIcon fontSize="small" color="secondary" />}
+                            completed={!!cycle.assignment?.completedAt}
+                            date={assignmentDate}
+                            metrics={[
+                              { label: "Assigned", value: cycle.assignment?.numberTicketsAssigned || 0 },
+                              { label: "Unassigned", value: cycle.assignment?.numberTicketsNotAssigned || 0 }
+                            ]}
+                          />
+                        </Grid>
+                        
+                        {/* Remediation Step */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <StepDetailCard
+                            title="Remediation"
+                            icon={<BuildIcon fontSize="small" color="warning" />}
+                            completed={!!cycle.remediation?.completedAt}
+                            date={remediationDate}
+                            metrics={[
+                              { label: "Submitted", value: cycle.remediation?.numberTicketsSubmitted || 0 },
+                              { label: "Not Submitted", value: cycle.remediation?.numberTicketsNotSubmitted || 0 }
+                            ]}
+                          />
+                        </Grid>
+                        
+                        {/* Verification Step */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <StepDetailCard
+                            title="Verification"
+                            icon={<VerifiedUser fontSize="small" color="success" />}
+                            completed={!!cycle.verification?.completedAt}
+                            date={verificationDate}
+                            metrics={[
+                              { label: "Resolved", value: cycle.verification?.numberTicketsResolved || 0 },
+                              { label: "Returned", value: cycle.verification?.numberTicketsReturnedToProcessing || 0 }
+                            ]}
+                            notes={cycle.verification?.notes}
+                          />
+                        </Grid>
+                        
+                        {/* Cycle Summary */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              p: 2,
+                              height: '100%',
+                              border: `1px solid ${theme.palette.divider}`,
+                              borderRadius: 2,
+                              bgcolor: alpha(theme.palette.background.paper, 0.7)
+                            }}
+                          >
+                            <Typography variant="subtitle2" gutterBottom>
+                              Cycle Summary
+                            </Typography>
+                            <Divider sx={{ my: 1 }} />
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="caption" color="text.secondary">Started:</Typography>
+                              <Typography variant="body2">
+                                {dayjs(cycle.startedAt).format('MMM D, YYYY')}
+                              </Typography>
+                            </Box>
+                            {cycle.completedAt && (
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="caption" color="text.secondary">Completed:</Typography>
+                                <Typography variant="body2">
+                                  {dayjs(cycle.completedAt).format('MMM D, YYYY')}
+                                </Typography>
+                              </Box>
+                            )}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="caption" color="text.secondary">Duration:</Typography>
+                              <Typography variant="body2">
+                                {cycle.completedAt ?
+                                  dayjs(cycle.completedAt).from(dayjs(cycle.startedAt), true) :
+                                  'In progress'
+                                }
+                              </Typography>
+                            </Box>
+                          </Paper>
+                        </Grid>
+                      </>
+                    );
+                  })()}
+                </Grid>
+              </Box>
+            </Collapse>
+          </Paper>
+        ))}
+      </Box>
+    </>
+  );
+}
+
+// Step Detail Card component for each workflow step in the history
+interface StepDetailCardProps {
+  title: string;
+  icon: React.ReactNode;
+  completed: boolean;
+  date?: string | Date;
+  metrics: Array<{ label: string; value: number }>;
+  notes?: string;
+}
+
+function StepDetailCard({ title, icon, completed, date, metrics, notes }: StepDetailCardProps) {
+  const theme = useTheme();
+  
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        height: '100%',
+        border: `1px solid ${theme.palette.divider}`,
+        borderRadius: 2,
+        bgcolor: alpha(theme.palette.background.paper, 0.7)
+      }}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center' }}>
+          {icon}
+          <Box component="span" sx={{ ml: 1 }}>{title}</Box>
+        </Typography>
+      </Box>
+      
+      <Divider sx={{ my: 1 }} />
+      
+      {metrics.map((metric, idx) => (
+        <Box 
+          key={idx} 
+          sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            mb: 0.5 
+          }}
+        >
+          <Typography variant="caption" color="text.secondary">{metric.label}:</Typography>
+          <Typography variant="body2">{metric.value}</Typography>
+        </Box>
+      ))}
+      
+      {notes && (
+        <Box sx={{ mt: 1, pt: 1, borderTop: `1px dashed ${theme.palette.divider}` }}>
+          <Typography variant="caption" color="text.secondary">Notes:</Typography>
+          <Typography variant="body2">{notes}</Typography>
+        </Box>
+      )}
+      
+      <Box sx={{ mt: 1, pt: 1, borderTop: `1px dashed ${theme.palette.divider}` }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+          <ScheduleIcon fontSize="inherit" sx={{ mr: 0.5 }} />
+          {date ? dayjs(date).format('MMM D, YYYY') : "Date not available"}
+        </Typography>
+      </Box>
+    </Paper>
+  );
 }
