@@ -427,6 +427,40 @@ export default function ManagerHomePage() {
               }}
             />
           </Box>
+        </Paper>        {/* Workflow Analytics */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 4,
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper'
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Timeline sx={{ mr: 1, color: theme.palette.primary.main }} />
+              <Typography variant="h6" fontWeight="bold">
+                Security Workflow
+              </Typography>
+            </Box>
+            <Button
+              component={RouterLink}
+              to={`/${currentProject}/workflow`}
+              variant="contained"
+              color="primary"
+              startIcon={<Timeline />}
+              size="small"
+            >
+              View Analytics
+            </Button>
+          </Box>
+          
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Monitor the progress of your security workflow across all artifacts. Track detection, classification,
+            assignment, remediation, and verification stages to ensure effective security management.
+          </Typography>
         </Paper>
 
         {/* Project Artifacts */}

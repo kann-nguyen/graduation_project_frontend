@@ -17,6 +17,8 @@ import {
   PieChart as PieChartIcon,
   Assessment,
   Timeline,
+  WorkOutline,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import {
   Box,
@@ -72,6 +74,8 @@ import SeverityStatistics from "~/components/charts/SeverityStatisticsChart";
 import ThreatStatistics from "~/components/charts/ThreatStatisticsChart";
 import { useAccountContext } from '~/hooks/general';
 import { useUpdateArtifactRateScanMutation } from '~/hooks/fetching/artifact/query';
+import WorkflowPanel from '~/components/workflow/WorkflowPanel';
+import { useArtifactWorkflowHistoryQuery, useProjectWorkflowStatsQuery } from '~/hooks/fetching/workflow/query';
 
 dayjs.extend(relativeTime);
 
@@ -1443,12 +1447,15 @@ export default function ArtifactDetail() {
                 {/* Vulnerability Summary */}
                 <VulnerabilitiesSummary vulnerabilities={artifact.vulnerabilityList || []} />
               
-                  {/* Threat Summary */}
+                {/* Threat Summary */}
                 <ThreatSummary threatList={artifact.threatList?.map(threat => 
                   typeof threat === 'string' ? threat : threat._id
                 ) || []} />
+                
+                {/* Workflow Panel */}
+                <WorkflowPanelSection artifactId={artifact._id} />
               
-                              {/* Scan History Chart */}
+                {/* Scan History Chart */}
                 <Paper 
                   elevation={0} 
                   sx={{ 
@@ -1522,8 +1529,125 @@ export default function ArtifactDetail() {
               ) || []} 
             />
           </DialogContent>
-        </Dialog>
-      </Box>
+        </Dialog>      </Box>
     </ArtifactDataContext.Provider>
   );
+}
+
+// Workflow Panel Section Component
+function WorkflowPanelSection({ artifactId }: { artifactId: string }) {
+  const { data: workflowHistory, isLoading, error } = useArtifactWorkflowHistoryQuery(artifactId);
+  const theme = useTheme();
+  
+  useEffect(() => {
+    if (error) {
+      console.error("Error in WorkflowPanelSection:", error);
+    }
+    
+    if (workflowHistory) {
+      console.log("Workflow history received:", workflowHistory);
+    }
+  }, [workflowHistory, error]);
+  
+  // If loading, show a loading indicator
+  if (isLoading) {
+    return (
+      <Paper
+        elevation={0}
+        sx={{ 
+          p: 3, 
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexDirection: 'column',
+          minHeight: 200
+        }}
+      >
+        <CircularProgress size={40} sx={{ mb: 2 }} />
+        <Typography color="text.secondary">Loading workflow data...</Typography>
+      </Paper>
+    );
+  }
+  
+  // If there's an error, show error message with retry button
+  if (error) {
+    return (
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h5" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <WorkOutline sx={{ mr: 1 }} /> Workflow Status
+        </Typography>
+        <Box sx={{ py: 3, textAlign: 'center' }}>
+          <Typography color="error.main" gutterBottom>
+            Error loading workflow data
+          </Typography>
+          <Typography color="text.secondary" variant="body2" sx={{ mb: 2 }}>
+            We encountered an issue while retrieving workflow information.
+            This might be because the workflow tracking system is still initializing.
+          </Typography>
+          <Button 
+            variant="outlined" 
+            onClick={() => window.location.reload()}
+            startIcon={<RefreshIcon />}
+          >
+            Reload Page
+          </Button>
+        </Box>
+      </Paper>
+    );
+  }
+  
+  // If the API call was successful but no data
+  if (!workflowHistory || !workflowHistory.data || 
+      (Array.isArray(workflowHistory.data) && workflowHistory.data.length === 0)) {
+    return (
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h5" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <WorkOutline sx={{ mr: 1 }} /> Workflow Status
+        </Typography>
+        <Box sx={{ py: 4, textAlign: 'center' }}>
+          <Typography color="text.secondary" paragraph>
+            No workflow data available for this artifact yet.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Workflow tracking will be initialized automatically after security scans are completed.
+          </Typography>
+        </Box>
+      </Paper>
+    );
+  }
+  
+  // Try to handle data even if it's in an unexpected format
+  let workflowData = [];
+  
+  if (workflowHistory?.data) {
+    if (Array.isArray(workflowHistory.data)) {
+      workflowData = workflowHistory.data;
+    } else if ((workflowHistory.data as any).workflowCycles && Array.isArray((workflowHistory.data as any).workflowCycles)) {
+      workflowData = (workflowHistory.data as any).workflowCycles;
+    } else {
+      console.warn("Unexpected workflow data format:", workflowHistory.data);
+    }
+  }
+  
+  return <WorkflowPanel 
+    workflowCycles={workflowData} 
+    isLoading={false} 
+    error={null} 
+  />;
 }
