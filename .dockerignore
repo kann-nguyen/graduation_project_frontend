@@ -1,0 +1,42 @@
+# .dockerignore specifies which files and directories to exclude when building a Docker image
+# This improves build performance and reduces image size
+
+# Node modules directory - no need to copy as we install dependencies in the container
+# This saves significant space and improves build time
+node_modules
+
+# Build output directory - we'll generate this during the build process inside the container
+dist
+
+# Version control files and directories - not needed in the image
+.git
+.gitignore
+
+# Environment variable files - typically contain sensitive data and are environment-specific
+# These should be provided at runtime or via Docker environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Log files - not needed in the image and may contain sensitive information
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor configuration files - specific to developers' environments, not needed in production
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Docker-related files - not needed inside the Docker image itself
+# Including these would be redundant and unnecessary
+Dockerfile
+docker-compose.yml
+.dockerignore
