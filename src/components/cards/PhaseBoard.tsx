@@ -23,7 +23,6 @@ import {
   Stack,
 } from "@mui/material";
 
-// Import các icons từ Material-UI
 import {
   Timeline,
   Assignment,
@@ -33,7 +32,7 @@ import {
   TrendingUp
 } from "@mui/icons-material";
 
-// Import types
+
 import { Phase } from "~/hooks/fetching/phase";
 
 /**
@@ -318,7 +317,7 @@ export default function PhaseBoard({
       <Divider sx={{ mx: 3, opacity: 0.6 }} />
       
       <CardContent sx={{ p: 0 }}>
-        // Không có phase nào thì hiển thị text tạo phase
+        {/* Không có phase nào thì hiển thị text tạo phase */}
         {phases.length === 0 ? (
           <Box sx={{ 
             textAlign: 'center', 
@@ -372,7 +371,7 @@ export default function PhaseBoard({
                     }}
                     onClick={visitDetails(phase._id)}
                   >
-                    // Name, description
+                    {/* Name, description */}
                     <TableCell sx={{ py: 3 }}>
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                         <Avatar 
@@ -408,7 +407,7 @@ export default function PhaseBoard({
                       </Box>
                     </TableCell>
                     
-                    // Hiển thị tiến độ
+                    {/* Hiển thị tiến độ */}
                     <TableCell align="center" sx={{ py: 3 }}>
                       <Box sx={{ minWidth: 80 }}>
                         <Typography variant="body2" fontWeight="medium" sx={{ mb: 1 }}>
@@ -430,7 +429,7 @@ export default function PhaseBoard({
                       </Box>
                     </TableCell>
                     
-                    // Hiển thị số lượng task
+                    {/* Hiển thị số lượng task */}
                     <TableCell align="center" sx={{ py: 3 }}>
                       <Tooltip title={`${phase.tasks.filter(t => t.status === 'completed').length} completed of ${phase.tasks.length} total`}>
                         <Chip
@@ -443,7 +442,7 @@ export default function PhaseBoard({
                       </Tooltip>
                     </TableCell>
                     
-                    // Hiển thị số lượng artifacts
+                    {/* Hiển thị số lượng artifacts */}
                     <TableCell align="center" sx={{ py: 3 }}>
                       <Tooltip title="Project artifacts and deliverables">
                         <Chip
@@ -456,7 +455,7 @@ export default function PhaseBoard({
                       </Tooltip>
                     </TableCell>
                     
-                    // Nút xem chi tiết phase
+                    {/* Nút xem chi tiết phase */}
                     <TableCell align="center" sx={{ py: 3 }}>
                       <Tooltip title="View phase details">
                         <Button
