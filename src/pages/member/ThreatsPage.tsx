@@ -49,10 +49,9 @@ import { Threat } from "~/hooks/fetching/threat";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
-// Extend dayjs with relative time
 dayjs.extend(relativeTime);
 
-// Threat type list for filtering
+// Danh sách loại mối đe dọa để lọc
 const threatTypes = [
   'All Types',
   'Spoofing',
@@ -63,6 +62,7 @@ const threatTypes = [
   'Elevation of Privilege'
 ];
 
+// Component chính cho trang quản lý mối đe dọa
 export default function ThreatsPage() {
   const { currentProject } = useParams();
   const threatsQuery = useThreatsQuery();
@@ -70,6 +70,7 @@ export default function ThreatsPage() {
   const projectInfo = projectInfoQuery.data?.data;
   const theme = useTheme();
   
+  // State quản lý danh sách mối đe dọa và bộ lọc
   const [threats, setThreats] = useState<Threat[]>([]);
   const [filteredThreats, setFilteredThreats] = useState<Threat[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,11 +78,11 @@ export default function ThreatsPage() {
   const [sortBy, setSortBy] = useState('name');
   const [isLoading, setIsLoading] = useState(true);
   
-  // Pagination
+  // State cho phân trang
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  // Initialize threats from query
+  // Khởi tạo danh sách mối đe dọa từ query
   useEffect(() => {
     if (threatsQuery.data?.data) {
       setThreats(threatsQuery.data.data);
@@ -90,13 +91,13 @@ export default function ThreatsPage() {
     }
   }, [threatsQuery.data]);
 
-  // Apply filters and search
+  // Áp dụng bộ lọc và tìm kiếm
   useEffect(() => {
     if (!threats || threats.length === 0) return;
 
     let result = [...threats];
 
-    // Apply search query
+    // Áp dụng truy vấn tìm kiếm
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(threat => 
@@ -105,12 +106,12 @@ export default function ThreatsPage() {
       );
     }
 
-    // Apply type filter
+    // Áp dụng bộ lọc loại mối đe dọa
     if (typeFilter !== 'All Types') {
       result = result.filter(threat => threat.type === typeFilter);
     }
 
-    // Apply sorting
+    // Áp dụng sắp xếp
     result.sort((a, b) => {
       switch (sortBy) {
         case 'name':
@@ -127,7 +128,7 @@ export default function ThreatsPage() {
     setFilteredThreats(result);
   }, [threats, searchQuery, typeFilter, sortBy]);
 
-  // Get threat type icon and color
+  // Lấy icon và màu sắc cho loại mối đe dọa
   const getThreatTypeInfo = (type: string) => {
     switch (type) {
       case 'Spoofing': 
@@ -147,7 +148,7 @@ export default function ThreatsPage() {
     }
   };
 
-  // Get score severity info
+  // Lấy thông tin mức độ nghiêm trọng dựa trên điểm số
   const getScoreSeverity = (score: number) => {
     if (score >= 4) return { label: 'Critical', color: theme.palette.error.main };
     if (score >= 3) return { label: 'High', color: theme.palette.warning.main };
@@ -155,16 +156,16 @@ export default function ThreatsPage() {
     return { label: 'Low', color: theme.palette.success.main };
   };
 
-  // Reset filters
+  // Reset các bộ lọc
   const handleResetFilters = () => {
     setSearchQuery('');
     setTypeFilter('All Types');
   };
 
-  // Check if filters are active
+  // Kiểm tra xem có bộ lọc nào đang được sử dụng không
   const hasActiveFilters = searchQuery || typeFilter !== 'All Types';
 
-  // Get paginated threats
+  // Lấy danh sách mối đe dọa đã phân trang
   const paginatedThreats = filteredThreats.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -180,7 +181,7 @@ export default function ThreatsPage() {
     }}>
       <Toolbar />
       <Container sx={{ py: 3 }} maxWidth="xl">
-        {/* Page Header */}
+        {/* Header trang */}
         <Paper 
           elevation={0} 
           sx={{ 
@@ -193,6 +194,7 @@ export default function ThreatsPage() {
             overflow: 'hidden'
           }}
         >
+          {/* Icon trang trí nền */}
           <Box 
             sx={{
               position: 'absolute',
@@ -207,6 +209,7 @@ export default function ThreatsPage() {
             <ShieldOutlined sx={{ fontSize: 180, position: 'absolute', top: '50%', right: -20, transform: 'translateY(-50%)' }} />
           </Box>
           
+          {/* Nội dung header */}
           <Box sx={{ position: 'relative', zIndex: 1 }}>
             <Typography variant="h4" fontWeight="bold">
               Security Threats
@@ -217,11 +220,11 @@ export default function ThreatsPage() {
           </Box>
         </Paper>
 
-        {/* Threats Management Card */}
+        {/* Card quản lý mối đe dọa */}
         <Card sx={{ width: '100%', mb: 4, overflow: 'hidden', boxShadow: 'none', border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
           
 
-          {/* Search and Filters */}
+          {/* Phần tìm kiếm và bộ lọc */}
           <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} md={5}>

@@ -68,8 +68,10 @@ import { useState, useEffect } from "react";
 import EditTicketDialog from "~/components/dialogs/EditTicketDialog";
 import { getThreat, getDetailedThreatInfo } from "~/hooks/fetching/threat/axios";
 
+// Mở rộng dayjs với plugin thời gian tương đối
 dayjs.extend(relativeTime);
 
+// Hàm lấy icon cho mức độ ưu tiên của ticket
 const getPriorityIcon = (priority: string) => {
   switch (priority) {
     case 'high': return <PriorityHigh color="error" />;
@@ -79,6 +81,7 @@ const getPriorityIcon = (priority: string) => {
   }
 };
 
+// Component header trang cho trang chi tiết ticket
 function PageHeader({ ticket }: { ticket: Ticket }) {
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -87,6 +90,7 @@ function PageHeader({ ticket }: { ticket: Ticket }) {
   
   return (
     <Box sx={{ mb: 4 }}>      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+        {/* Nút quay lại danh sách tickets */}
         <Button 
           startIcon={<ArrowBack />} 
           onClick={() => navigate(`/${encodeURIComponent(currentProject || '')}/tickets`)}
@@ -98,7 +102,7 @@ function PageHeader({ ticket }: { ticket: Ticket }) {
         </Button>
       
         
-        <Box sx={{ flexGrow: 1 }} />        {/* Moved status to top right and made it larger with enhanced styling */}
+        <Box sx={{ flexGrow: 1 }} />        {/* Trạng thái ticket được di chuyển lên góc phải với kiểu dáng được cải thiện */}
         <Box 
           sx={{ 
             display: 'flex', 
@@ -113,6 +117,7 @@ function PageHeader({ ticket }: { ticket: Ticket }) {
           <TicketStatusChip status={ticket.status} size="large" />
         </Box>
         
+        {/* Menu hành động cho ticket */}
         <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)}>
           <MoreVert />
         </IconButton>
@@ -135,6 +140,7 @@ function PageHeader({ ticket }: { ticket: Ticket }) {
           </MenuItem>
         </Menu>
       </Box>
+        {/* Tiêu đề chính của ticket */}
         <Typography 
         variant="h4" 
         fontWeight="bold" 
@@ -149,6 +155,7 @@ function PageHeader({ ticket }: { ticket: Ticket }) {
         {ticket.title}
       </Typography>
       
+      {/* Các chip thông tin bổ sung */}
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Chip 
           icon={getPriorityIcon(ticket.priority)} 
@@ -177,7 +184,9 @@ function PageHeader({ ticket }: { ticket: Ticket }) {
   );
 }
 
+// Component hiển thị tiến trình của ticket
 function TicketProgressCard({ ticket }: { ticket: Ticket }) {
+  // Tính toán phần trăm tiến trình dựa trên trạng thái
   let progress = 0;
   
   switch (ticket.status) {
@@ -214,6 +223,7 @@ function TicketProgressCard({ ticket }: { ticket: Ticket }) {
         Ticket Progress
       </Typography>
       
+      {/* Thanh tiến trình */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
         <Box sx={{ width: '100%', mr: 1 }}>
           <LinearProgress 
@@ -239,6 +249,7 @@ function TicketProgressCard({ ticket }: { ticket: Ticket }) {
         </Box>
       </Box>
       
+      {/* Các mốc tiến trình */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
         <Tooltip title="Not accepted">
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -303,6 +314,7 @@ function TicketProgressCard({ ticket }: { ticket: Ticket }) {
   );
 }
 
+// Component hiển thị thông tin chi tiết của ticket
 function TicketInfoCard({ ticket }: { ticket: Ticket }) {
   const theme = useTheme();
   
@@ -322,6 +334,7 @@ function TicketInfoCard({ ticket }: { ticket: Ticket }) {
       
       <Grid container spacing={2}>
         <Grid item xs={12}>
+          {/* Phần mô tả ticket */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
             <Description sx={{ color: 'text.secondary', mr: 2, mt: 0.5 }} />
             <Box>
@@ -335,6 +348,7 @@ function TicketInfoCard({ ticket }: { ticket: Ticket }) {
           </Box>
         </Grid>
         
+        {/* Thời gian cập nhật cuối */}
         <Grid item xs={12} sm={6}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Schedule sx={{ color: 'text.secondary', mr: 2 }} />
@@ -349,6 +363,7 @@ function TicketInfoCard({ ticket }: { ticket: Ticket }) {
           </Box>
         </Grid>
         
+        {/* Thời gian tạo */}
         <Grid item xs={12} sm={6}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <CalendarToday sx={{ color: 'text.secondary', mr: 2 }} />
@@ -367,6 +382,7 @@ function TicketInfoCard({ ticket }: { ticket: Ticket }) {
   );
 }
 
+// Component hiển thị thông tin phân công ticket
 function AssignmentCard({ ticket }: { ticket: Ticket }) {
   const theme = useTheme();
   
@@ -385,6 +401,7 @@ function AssignmentCard({ ticket }: { ticket: Ticket }) {
       </Typography>
       
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Thông tin người được phân công */}
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Avatar 
             sx={{ 
@@ -409,6 +426,7 @@ function AssignmentCard({ ticket }: { ticket: Ticket }) {
         
         <Divider />
         
+        {/* Thông tin người phân công */}
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Avatar 
             sx={{ 
@@ -435,16 +453,18 @@ function AssignmentCard({ ticket }: { ticket: Ticket }) {
   );
 }
 
+// Component hiển thị lịch sử thay đổi của ticket
 function History({ ticketId }: { ticketId: string }) {
   const query = useChangeHistoryQuery(ticketId);
   const history = query.data?.data ?? [];
   const theme = useTheme();
   
-  // Sort history by timestamp in descending order (newest first)
+  // Sắp xếp lịch sử theo thời gian giảm dần (mới nhất trước)
   const sortedHistory = [...history].sort((a, b) => 
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
+  // Hiển thị loading khi đang tải dữ liệu
   if (query.isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
@@ -453,6 +473,7 @@ function History({ ticketId }: { ticketId: string }) {
     );
   }
 
+  // Hiển thị thông báo khi không có lịch sử
   if (sortedHistory.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -507,6 +528,7 @@ function History({ ticketId }: { ticketId: string }) {
   );
 }
 
+// Component hiển thị chi tiết mối đe dọa liên quan đến ticket
 function ThreatDetailsCard({ threatId }: { threatId: string }) {
   const { currentProject } = useParams();
   const encodedUrl = encodeURIComponent(currentProject);
@@ -521,11 +543,11 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
       try {
         setIsLoading(true);
         
-        // Fetch basic threat data
+        // Lấy dữ liệu mối đe dọa cơ bản
         const response = await getThreat(threatId);
         setThreat(response.data);
         
-        // Fetch detailed threat info including CVE, CWE, and CVSS data
+        // Lấy thông tin chi tiết mối đe dọa bao gồm CVE, CWE, và dữ liệu CVSS
         const detailsResponse = await getDetailedThreatInfo(threatId);
         setDetailedInfo(detailsResponse.data);
         
@@ -540,6 +562,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
     fetchThreat();
   }, [threatId]);
 
+  // Hiển thị loading khi đang tải
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
@@ -548,6 +571,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
     );
   }
 
+  // Hiển thị lỗi nếu có
   if (error) {
     return (
       <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -558,6 +582,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
     );
   }
 
+  // Hiển thị thông báo nếu không có dữ liệu mối đe dọa
   if (!threat) {
     return (
       <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -573,7 +598,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
 
   const threatTypeInfo = typeOptions.find(opt => opt.name === threat.type);
   
-  // Color coding based on threat score
+  // Xác định mức độ nghiêm trọng dựa trên điểm số mối đe dọa
   const getScoreSeverity = (score: number) => {
     if (score >= 4) return { color: 'error', label: 'Critical' };
     if (score >= 3) return { color: 'warning', label: 'High' };
@@ -583,7 +608,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
   
   const scoreSeverity = getScoreSeverity(threat.score?.total || 0);
 
-  // STRIDE type descriptions for tooltips
+  // Mô tả các loại STRIDE để hiển thị tooltip
   const strideDescriptions = {
     "Spoofing": "Identity theft to gain unauthorized access",
     "Tampering": "Malicious modification of data or code",
@@ -603,6 +628,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
         background: `linear-gradient(to right, ${alpha(theme.palette.background.paper, 0.95)}, ${theme.palette.background.paper})`,
       }}
     >
+      {/* Header của card mối đe dọa */}
       <Box 
         sx={{ 
           display: 'flex',
@@ -658,6 +684,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
                 sx={{ fontWeight: 'medium', fontSize: '0.9rem', height: 28 }}
               />
             </Box>
+            {/* CWE IDs */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 CWE IDs
@@ -705,7 +732,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
               </Box>
             </Box>
             
-            {/* DREAD Risk Score - Positioned directly below CVSS Score */}
+            {/* DREAD Risk Score - Được đặt ngay dưới CVSS Score */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 DREAD Risk Score
@@ -729,7 +756,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
           </Grid>
           
           <Grid item xs={12}>
-            {/* Description - Brief Version */}
+            {/* Mô tả - Phiên bản rút gọn */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Description
@@ -740,6 +767,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
             </Box>          </Grid>
         </Grid>
         
+        {/* Nút xem chi tiết mối đe dọa */}
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
           <Button 
             variant="outlined" 
@@ -757,6 +785,7 @@ function ThreatDetailsCard({ threatId }: { threatId: string }) {
   );
 }
 
+// Component chính hiển thị chi tiết ticket
 export default function TicketDetail() {
   const { ticketId } = useParams();
   const queryClient = useQueryClient();
@@ -764,6 +793,7 @@ export default function TicketDetail() {
   const navigate = useNavigate();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
+  // Mutation để cập nhật trạng thái ticket
   const ticketMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const response = await updateTicketState({id, status});
@@ -771,11 +801,11 @@ export default function TicketDetail() {
     },
     onSuccess: async () => {
       if (ticketId) {
-        // Invalidate specific ticket
+        // Làm mới cache cho ticket cụ thể
         queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
-        // Invalidate change history
+        // Làm mới cache cho lịch sử thay đổi
         queryClient.invalidateQueries({ queryKey: ['changeHistory'] });
-        // Force refetch tickets for both member and manager views
+        // Buộc làm mới tickets cho cả view member và manager
         await queryClient.invalidateQueries({ 
           queryKey: ['tickets'],
           refetchType: 'all'
@@ -787,11 +817,12 @@ export default function TicketDetail() {
     },
   });
 
-  // Increase refetch interval to make updates more responsive
+  // Tăng khoảng thời gian refetch để cập nhật nhanh hơn
   const ticketQuery = useTicketQuery(ticketId || '', {
-    refetchInterval: 5000 // Refetch every 5 seconds
+    refetchInterval: 5000 // Refetch mỗi 5 giây
   });
 
+  // Xử lý cập nhật trạng thái ticket
   const handleStatusUpdate = async () => {
     if (!ticketId) return;
 
@@ -816,6 +847,7 @@ export default function TicketDetail() {
     }
   };
 
+  // Hiển thị loading khi đang tải ticket
   if (ticketQuery.isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -824,6 +856,7 @@ export default function TicketDetail() {
     );
   }
 
+  // Hiển thị lỗi khi không tìm thấy ticket
   if (!ticketId || !ticketQuery.data?.data) {
     return (
       <Box sx={{ 
@@ -848,6 +881,7 @@ export default function TicketDetail() {
 
   const ticket = ticketQuery.data.data;
 
+  // Tạo nút hành động tùy theo trạng thái ticket
   const getActionButton = () => {
     if (ticketMutation.isLoading) {
       return (
@@ -904,10 +938,12 @@ export default function TicketDetail() {
         <PageHeader ticket={ticket} />
         
         <Grid container spacing={3}>
+          {/* Cột chính - Bên trái */}
           <Grid item xs={12} lg={8}>
             <Stack spacing={3}>
               <TicketProgressCard ticket={ticket} />
               
+              {/* Phần mối đe dọa bảo mật được nhắm mục tiêu */}
               <Paper 
                 elevation={0} 
                 sx={{ 
@@ -932,6 +968,7 @@ export default function TicketDetail() {
                 )}
               </Paper>
               
+              {/* Phần lịch sử ticket */}
               <Paper 
                 elevation={0} 
                 sx={{ 
@@ -951,8 +988,10 @@ export default function TicketDetail() {
             </Stack>
           </Grid>
           
+          {/* Cột bên phải - Thông tin bổ sung */}
           <Grid item xs={12} lg={4}>
             <Stack spacing={3}>
+              {/* Card chi tiết ticket */}
               <Paper 
                 elevation={0} 
                 sx={{ 
@@ -1023,6 +1062,7 @@ export default function TicketDetail() {
 
               <AssignmentCard ticket={ticket} />
               
+              {/* Card hành động cho ticket */}
               {getActionButton() && (
                 <Paper 
                   elevation={0} 
@@ -1048,7 +1088,7 @@ export default function TicketDetail() {
         </Grid>
       </Container>
       
-      {/* Edit Ticket Dialog */}
+      {/* Dialog chỉnh sửa ticket */}
       <EditTicketDialog 
         open={editDialogOpen}
         setOpen={setEditDialogOpen}

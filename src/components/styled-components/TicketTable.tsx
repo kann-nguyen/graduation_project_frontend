@@ -1,4 +1,4 @@
-// Project: Ticket Management System
+
 import {
   Box,
   Button,
@@ -47,7 +47,7 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [openAddDialog, setOpenAddDialog] = useState(false);
-  const { currentProject } = useParams();  const userRole = useUserRole();
+  const { currentProject } = useParams(); const userRole = useUserRole();
   const encodedUrl = encodeURIComponent(currentProject);
 
   const ticketSlice = tickets.slice(
@@ -101,7 +101,7 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
             </TableRow>
           ) : (
             ticketSlice.map((ticket) => (
-              <TableRow 
+              <TableRow
                 key={ticket._id}
                 sx={{
                   '&:hover': {
@@ -116,7 +116,7 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
                   <Link
                     component={RouterLink}
                     to={`/${encodedUrl}/tickets/${ticket._id}`}
-                    sx={{ 
+                    sx={{
                       textDecoration: 'none',
                       '&:hover': { textDecoration: 'underline' }
                     }}
@@ -125,11 +125,16 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
                     {ticket.title}
                   </Link>
                 </TableCell>
+
                 <TableCell align="center">
                   <PriorityChip priority={ticket.priority} />
                 </TableCell>
+
                 <TableCell align="center">{ticket.assignee?.name || "Unassigned"}</TableCell>
-                <TableCell align="center">{ticket.assigner?.name || "Unknown"}</TableCell>                <TableCell align="center">
+
+                <TableCell align="center">{ticket.assigner?.name || "Unknown"}</TableCell>
+
+                <TableCell align="center">
                   <TicketStatusChip status={ticket.status} />
                 </TableCell>
               </TableRow>
@@ -137,7 +142,7 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
           )}
         </TableBody>
       </Table>
-      <Box 
+      <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -160,9 +165,9 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
                 setRowsPerPage(parseInt(e.target.value as string, 10));
                 setPage(0);
               }}
-              sx={{ 
+              sx={{
                 height: '32px',
-                '& .MuiSelect-select': { py: 0.5 } 
+                '& .MuiSelect-select': { py: 0.5 }
               }}
             >
               {[5, 10, 25, 50].map((option) => (
@@ -181,7 +186,7 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
           <Box sx={{ display: 'flex' }}>
             <Tooltip title="First page">
               <span>
-                <IconButton 
+                <IconButton
                   size="small"
                   onClick={() => setPage(0)}
                   disabled={page === 0}
@@ -237,7 +242,6 @@ function TicketTable({ tickets, isLoading }: { tickets: Ticket[]; isLoading?: bo
 
 export default function ExtendedTicketTable({ tickets, isLoading }: TabProps) {
   const [displayTickets, setDisplayTickets] = useState(tickets);
-  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     status: "all",
     priority: "all",
@@ -245,15 +249,12 @@ export default function ExtendedTicketTable({ tickets, isLoading }: TabProps) {
     assigner: "all"
   });
   const [searchQuery, setSearchQuery] = useState("");
-  const userRole = useUserRole();
   const theme = useTheme();
 
   useEffect(() => {
     setDisplayTickets(tickets);
   }, [tickets]);
 
-  const uniqueAssignees = Array.from(new Set(tickets.map(t => t.assignee?.name || "Unassigned")));
-  const uniqueAssigners = Array.from(new Set(tickets.map(t => t.assigner?.name || "Unknown")));
 
   const handleFilterChange = (filterType: string, value: string) => {
     const newFilters = { ...filters, [filterType]: value };
@@ -271,7 +272,7 @@ export default function ExtendedTicketTable({ tickets, isLoading }: TabProps) {
 
     // Apply search filter
     if (search) {
-      filteredTickets = filteredTickets.filter(t => 
+      filteredTickets = filteredTickets.filter(t =>
         t.title.toLowerCase().includes(search.toLowerCase()) ||
         t.description?.toLowerCase().includes(search.toLowerCase())
       );
@@ -285,12 +286,12 @@ export default function ExtendedTicketTable({ tickets, isLoading }: TabProps) {
       filteredTickets = filteredTickets.filter(t => t.priority === currentFilters.priority);
     }
     if (currentFilters.assignee !== "all") {
-      filteredTickets = filteredTickets.filter(t => 
+      filteredTickets = filteredTickets.filter(t =>
         (t.assignee?.name || "Unassigned") === currentFilters.assignee
       );
     }
     if (currentFilters.assigner !== "all") {
-      filteredTickets = filteredTickets.filter(t => 
+      filteredTickets = filteredTickets.filter(t =>
         (t.assigner?.name || "Unknown") === currentFilters.assigner
       );
     }
@@ -313,7 +314,7 @@ export default function ExtendedTicketTable({ tickets, isLoading }: TabProps) {
 
   return (
     <Card sx={{ width: '100%', mb: 4, overflow: 'hidden', boxShadow: 'none', border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-      
+
       {/* Search and Filters - New Layout */}
       <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
         <Grid container spacing={2} alignItems="center">
@@ -328,7 +329,7 @@ export default function ExtendedTicketTable({ tickets, isLoading }: TabProps) {
                   <Search color="action" />
                 </InputAdornment>
               }
-              sx={{ 
+              sx={{
                 width: '100%',
                 borderRadius: 1,
                 bgcolor: 'background.paper',
@@ -339,7 +340,7 @@ export default function ExtendedTicketTable({ tickets, isLoading }: TabProps) {
               size="small"
             />
           </Grid>
-          
+
           {/* Status Filter - Right Side */}
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">

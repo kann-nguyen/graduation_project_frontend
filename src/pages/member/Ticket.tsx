@@ -5,12 +5,15 @@ import { BugReport } from "@mui/icons-material";
 import ExtendedTicketTable from "~/components/styled-components/TicketTable";
 import { useTicketsQuery } from "~/hooks/fetching/ticket/query";
 
+// Component chính cho trang quản lý tickets
 export default function Ticket() {
   const { currentProject } = useParams();
   const theme = useTheme();
+  // Query để lấy danh sách tickets
   const ticketQuery = useTicketsQuery(currentProject);
   const tickets = ticketQuery.data?.data ?? [];
 
+  // Hiển thị loading khi đang tải dữ liệu
   if (ticketQuery.isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="calc(100vh - 64px)">
@@ -31,7 +34,7 @@ export default function Ticket() {
     }}>
       <Toolbar />
       <Container sx={{ py: 3 }} maxWidth="xl">
-        {/* Page Header - Description Box */}
+        {/* Header trang - Box mô tả */}
         <Paper 
           elevation={0} 
           sx={{ 
@@ -44,6 +47,7 @@ export default function Ticket() {
             overflow: 'hidden'
           }}
         >
+          {/* Icon trang trí nền */}
           <Box 
             sx={{
               position: 'absolute',
@@ -58,6 +62,7 @@ export default function Ticket() {
             <BugReport sx={{ fontSize: 180, position: 'absolute', top: '50%', right: -20, transform: 'translateY(-50%)' }} />
           </Box>
           
+          {/* Nội dung header */}
           <Box sx={{ position: 'relative', zIndex: 1 }}>
             <Typography variant="h4" fontWeight="bold">
               Project Tickets
@@ -68,7 +73,7 @@ export default function Ticket() {
           </Box>
         </Paper>
 
-        {/* Ticket Table with new layout */}
+        {/* Bảng tickets với layout mới */}
         <ExtendedTicketTable tickets={tickets} />
       </Container>
     </Box>

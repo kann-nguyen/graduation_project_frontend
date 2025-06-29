@@ -88,7 +88,7 @@ import WorkflowPanel from '~/components/cards/WorkflowPanel';
 
 dayjs.extend(relativeTime);
 
-// Create a context to share cached threat and vulnerability data between components
+// Tạo context để chia sẻ dữ liệu threat và vulnerability được cache giữa các component
 interface ArtifactDataContextType {
   cachedThreats: Threat[];
   setCachedThreats: React.Dispatch<React.SetStateAction<Threat[]>>;
@@ -96,6 +96,7 @@ interface ArtifactDataContextType {
   setIsLoadingThreats: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+// Context mặc định cho dữ liệu artifact
 const ArtifactDataContext = createContext<ArtifactDataContextType>({
   cachedThreats: [],
   setCachedThreats: () => {},
@@ -103,13 +104,14 @@ const ArtifactDataContext = createContext<ArtifactDataContextType>({
   setIsLoadingThreats: () => {},
 });
 
+// Component header trang cho artifact detail
 function PageHeader({ artifact }: { artifact: Artifact }) {
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const { currentProject } = useParams();
   const theme = useTheme();
   
-  // Get the phase that contains this artifact
+  // Lấy thông tin phase chứa artifact này
   const { data: phaseData, isLoading: isLoadingPhase } = useArtifactPhaseQuery(artifact._id);
   
   const getArtifactTypeColor = (type: string) => {
@@ -206,10 +208,12 @@ function PageHeader({ artifact }: { artifact: Artifact }) {
   );
 }
 
+// Component tóm tắt các lỗ hổng bảo mật
 function VulnerabilitiesSummary({ vulnerabilities }: { vulnerabilities: Vulnerability[] }) {
   const theme = useTheme();
   const [viewVulnDialogOpen, setViewVulnDialogOpen] = useState(false);
   
+  // Hàm đếm số lượng lỗ hổng theo mức độ nghiêm trọng
   const getVulnerabilitySeverityCounts = () => {
     const counts = { critical: 0, high: 0, medium: 0, low: 0, negligible: 0 };
     vulnerabilities.forEach(vuln => {
@@ -224,7 +228,7 @@ function VulnerabilitiesSummary({ vulnerabilities }: { vulnerabilities: Vulnerab
   const counts = getVulnerabilitySeverityCounts();
   const total = vulnerabilities.length;
   
-  // Data for the pie chart
+  // Dữ liệu cho biểu đồ tròn
   const pieChartData = [
     { name: "Critical", value: counts.critical, fill: theme.palette.error.dark },
     { name: "High", value: counts.high, fill: theme.palette.error.main },
@@ -233,11 +237,13 @@ function VulnerabilitiesSummary({ vulnerabilities }: { vulnerabilities: Vulnerab
     { name: "Negligible", value: counts.negligible, fill: theme.palette.grey[400] }
   ].filter(item => item.value > 0);
   
+  // Hàm render nhãn cho biểu đồ
   const renderLabel = ({ percent }: { percent: number }) => {
     if (percent < 0.05) return null;
     return `${(percent * 100).toFixed(0)}%`;
   };
   
+  // Hiển thị khi không có lỗ hổng nào
   if (vulnerabilities.length === 0) {
     return (
       <Paper 
@@ -407,12 +413,13 @@ function VulnerabilitiesSummary({ vulnerabilities }: { vulnerabilities: Vulnerab
   );
 }
 
+// Component tóm tắt các mối đe dọa
 function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[] }) {
   const theme = useTheme();
   const { cachedThreats, setCachedThreats, isLoadingThreats, setIsLoadingThreats } = useContext(ArtifactDataContext);
   const [viewThreatsDialogOpen, setViewThreatsDialogOpen] = useState(false);
   
-  // Track counts by threat type
+  // Theo dõi số lượng theo loại mối đe dọa
   const [threatTypeCounts, setThreatTypeCounts] = useState<{[key: string]: number}>({
     'Spoofing': 0,
     'Tampering': 0,
@@ -423,7 +430,7 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
     'Unknown': 0
   });
   
-  // Add debug state variables
+  // Thêm các biến state để debug
   const [debugInfo, setDebugInfo] = useState<{
     processedCount: number,
     successCount: number,
@@ -438,7 +445,7 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
     lastError: null
   });
 
-  // Fetch all threat data to display in the summary
+  // Lấy tất cả dữ liệu mối đe dọa để hiển thị trong tóm tắt
   useEffect(() => {
     const fetchThreats = async () => {
       if (!threatList?.length) {
@@ -446,7 +453,7 @@ function ThreatSummary({ threatList }: { threatList: (string | { _id: string })[
         return;
       }
       
-      // Skip fetching if we already have cached threats
+      // Bỏ qua việc fetch nếu đã có cached threats
       if (cachedThreats.length > 0) {
         processThreats(cachedThreats);
         setIsLoadingThreats(false);

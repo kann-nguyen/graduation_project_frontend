@@ -66,11 +66,14 @@ import {
 import { useAccountContext, useUserRole } from '~/hooks/general';
 import { useSnackbar } from 'notistack';
 
+// Component chính hiển thị chi tiết mối đe dọa
 export default function ThreatDetail() {
   const { threatId } = useParams();
   const theme = useTheme();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  
+  // State cho dữ liệu mối đe dọa
   const [threat, setThreat] = useState<Threat | null>(null);
   const [detailedInfo, setDetailedInfo] = useState<any>(null);
   const [suggestedFixes, setSuggestedFixes] = useState<any>(null);
@@ -79,34 +82,34 @@ export default function ThreatDetail() {
   const [openFixDialog, setOpenFixDialog] = useState(false);
   const [expanded, setExpanded] = useState(false);
   
-  // Mitigation management
+  // Quản lý mitigation (biện pháp giảm thiểu)
   const [mitigations, setMitigations] = useState<Mitigation[]>([]);
   const [isLoadingMitigations, setIsLoadingMitigations] = useState(false);
   const [openNewMitigationDialog, setOpenNewMitigationDialog] = useState(false);
   const [openEditMitigationDialog, setOpenEditMitigationDialog] = useState(false);
   const [currentMitigation, setCurrentMitigation] = useState<Mitigation | null>(null);
   
-  // Authentication
-  const isManager = useUserRole() === "security_expert";
+  // Xác thực quyền truy cập
+  const isExpert = useUserRole() === "security_expert";
 
-  // Fetch basic threat info and detailed info on page load
+  // Lấy thông tin cơ bản và chi tiết về mối đe dọa khi tải trang
   useEffect(() => {
     const fetchThreatData = async () => {
       try {
-        // Add logging to help debug when and with what value this hook is being called
+        // Thêm logging để debug khi hook được gọi với giá trị nào
         console.log(`fetchThreatData called with threatId: ${threatId}, type: ${typeof threatId}`);
         
         if (!threatId) {
           console.log('Cannot fetch threat data: threatId is undefined or null');
-          return; // Don't proceed with API calls if threatId is undefined
+          return; // Không tiếp tục gọi API nếu threatId không tồn tại
         }
         
         setIsLoading(true);
-        // Get basic threat info
+        // Lấy thông tin cơ bản về mối đe dọa
         const threatResponse = await getThreat(threatId);
         setThreat(threatResponse.data);
 
-        // Get detailed threat information
+        // Lấy thông tin chi tiết về mối đe dọa
         const detailedResponse = await getDetailedThreatInfo(threatId);
         setDetailedInfo(detailedResponse.data);
         
@@ -122,16 +125,16 @@ export default function ThreatDetail() {
     fetchThreatData();
   }, [threatId]);
 
-  // Fetch mitigations for this threat when component loads
+  // Lấy các biện pháp giảm thiểu cho mối đe dọa này khi component được tải
   useEffect(() => {
-    // Only fetch mitigations if we have a valid threatId string and the user is a manager
+    // Chỉ lấy mitigations nếu có threatId hợp lệ và người dùng là manager
     if (threatId) {
       console.log(`About to fetch mitigations for threatId: ${threatId}`);
       fetchMitigations();
     }
   }, [threatId]);
 
-  // Fetch mitigations for the current threat
+  // Lấy các biện pháp giảm thiểu cho mối đe dọa hiện tại
   const fetchMitigations = async () => {
     if (!threatId || typeof threatId !== 'string') {
       console.log('Cannot fetch mitigations: Invalid or missing threatId');
@@ -150,7 +153,7 @@ export default function ThreatDetail() {
     }
   };
 
-  // Handle creating a new mitigation
+  // Xử lý tạo biện pháp giảm thiểu mới
   const handleCreateMitigation = async (formData: { title: string; description: string; implementation: string }) => {
     if (!threatId) return;
     
@@ -160,7 +163,7 @@ export default function ThreatDetail() {
         threatId
       });
       
-      // Handle response structure properly and add proper type checking
+      // Xử lý cấu trúc response đúng cách và thêm kiểm tra type
       const mitigation = response?.data?.mitigation || response?.data;
       
       if (mitigation && ('title' in mitigation)) {
@@ -177,14 +180,14 @@ export default function ThreatDetail() {
     }
   };
 
-  // Handle updating an existing mitigation
+  // Xử lý cập nhật biện pháp giảm thiểu hiện có
   const handleUpdateMitigation = async (formData: { title: string; description: string; implementation: string }) => {
     if (!currentMitigation) return;
     
     try {
       const response = await updateMitigation(currentMitigation._id, formData);
       
-      // Fix: The response structure comes directly in data property, not in data.mitigation
+      // Fix: Cấu trúc response đến trực tiếp trong thuộc tính data, không phải data.mitigation
       const updatedMitigation = response.data;
       
       setMitigations(prev => 
@@ -198,7 +201,7 @@ export default function ThreatDetail() {
     }
   };
 
-  // Handle deleting a mitigation
+  // Xử lý xóa biện pháp giảm thiểu
   const handleDeleteMitigation = async (mitigationId: string) => {
     if (!threatId) return;
     
@@ -217,7 +220,7 @@ export default function ThreatDetail() {
     }
   };
 
-  // Function to handle getting suggested fixes
+  // Hàm xử lý lấy các đề xuất sửa chữa
   const handleGetSuggestedFixes = async () => {
     try {
       const response = await getSuggestedFixes(threatId);
@@ -228,6 +231,7 @@ export default function ThreatDetail() {
     }
   };
 
+  // Hiển thị loading khi đang tải dữ liệu
   if (isLoading) {
     return (
       <Box sx={{ 
@@ -246,6 +250,7 @@ export default function ThreatDetail() {
     );
   }
 
+  // Hiển thị lỗi nếu có
   if (error) {
     return (
       <Box sx={{ 
@@ -276,6 +281,7 @@ export default function ThreatDetail() {
     );
   }
 
+  // Hiển thị thông báo khi không có dữ liệu mối đe dọa
   if (!threat || !detailedInfo) {
     return (
       <Box sx={{ 
@@ -535,7 +541,7 @@ export default function ThreatDetail() {
               </Paper>
 
               {/* Section 3: Mitigations (only visible for managers) */}
-              {isManager && (
+              {isExpert && (
                 <Paper 
                   elevation={0} 
                   sx={{ 
