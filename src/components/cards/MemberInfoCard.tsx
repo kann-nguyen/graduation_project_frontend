@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import RoleChip from "~/components/styled-components/RoleChip";
-import { GitLab } from "~/icons/Icons";
+import { GitLab } from "~/components/layout-components/Icons";
 import { ThirdParty } from "~/hooks/fetching/account";
 import { User } from "~/hooks/fetching/user";
 import AvatarImage from "/avatar.webp";

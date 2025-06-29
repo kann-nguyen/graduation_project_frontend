@@ -12,7 +12,7 @@ import {
   CardContent,
 } from "@mui/material";
 import { MouseEvent, useState } from "react";
-import { PullRequest } from "~/icons/Icons";
+import { PullRequest } from "~/components/layout-components/Icons";
 import { User } from "~/hooks/fetching/user";
 const rowsPerPage = 5;
 import dayjs from "dayjs";

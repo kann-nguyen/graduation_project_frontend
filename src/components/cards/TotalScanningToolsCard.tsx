@@ -7,7 +7,7 @@ import {
   SxProps,
   Typography,
 } from "@mui/material";
-import { PullRequest } from "~/icons/Icons";
+import { PullRequest } from "~/components/layout-components/Icons";
 export default function TotalScanningTools({
   total,
   sx,

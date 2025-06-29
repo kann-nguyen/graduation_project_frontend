@@ -28,7 +28,7 @@ import {
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProjectWorkflowStatsQuery, useArtifactsByWorkflowStepQuery } from '~/hooks/fetching/workflow/query';
-import WorkflowStatsPanel from '~/components/workflow/WorkflowStatsPanel';
+import WorkflowStatsPanel from '~/components/cards/WorkflowStatsPanel';
 import { WorkflowStats } from '~/hooks/fetching/workflow';
 
 export default function ProjectWorkflowPage() {

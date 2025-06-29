@@ -13,7 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import dayjs from "dayjs";
-import { PullRequest } from "~/icons/Icons";
+import { PullRequest } from "~/components/layout-components/Icons";
 import { ActivityHistory } from "~/hooks/fetching/history";
 import Empty from "/empty.png";
 export default function RecentActivity({

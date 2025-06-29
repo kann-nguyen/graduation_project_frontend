@@ -62,7 +62,7 @@ import {
   SuggestFixCard,
   SuggestedFixesDialog,
   MitigationForm
-} from '~/components/threat/ThreatDetailComponents';
+} from '~/components/cards/ThreatDetailComponents';
 import { useAccountContext, useUserRole } from '~/hooks/general';
 import { useSnackbar } from 'notistack';
 

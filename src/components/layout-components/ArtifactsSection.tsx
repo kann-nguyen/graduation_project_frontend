@@ -33,7 +33,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 import { useArtifactsQuery } from '~/hooks/fetching/artifact/query';
 import { WorkflowCycle } from '~/hooks/fetching/workflow';
-import { Docker } from '~/icons/Icons';
+import { Docker } from '~/components/layout-components/Icons';
 import { Artifact } from '~/hooks/fetching/artifact';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';

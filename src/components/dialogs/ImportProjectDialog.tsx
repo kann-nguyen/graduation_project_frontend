@@ -19,7 +19,7 @@ import { Controller, useForm } from "react-hook-form";
 import { RepoImport } from "~/hooks/fetching/git";
 import { useGetRepo } from "~/hooks/fetching/git/query";
 import { useImportProjectMutation } from "~/hooks/fetching/project/query";
-import { GitLab } from "~/icons/Icons";
+import { GitLab } from "~/components/layout-components/Icons";
 
 interface Data {
   data: RepoImport;

@@ -30,7 +30,7 @@ import {
 } from "~/hooks/fetching/account/query";
 import { useGetScanners } from "~/hooks/fetching/scanner/query";
 import { useAccountContext, useUserRole } from "~/hooks/general";
-import { GitLab } from "~/icons/Icons";
+import { GitLab } from "~/components/layout-components/Icons";
 import AddNewToolDialog from "../dialogs/AddNewToolDialog";
 import ConfirmActionDialog from "../dialogs/ConfirmActionDialog";
 import EditScannerDialog from "../dialogs/EditScannerDialog";

@@ -1,3 +1,4 @@
+
 import {
   Add,
   Delete,
@@ -23,14 +24,21 @@ interface ScannerDetailsProps {
   phase: Phase;
 }
 
+/**
+ * Component hiển thị danh sách scanner tools trong phase
+ * Cho phép thêm, xóa và quản lý các scanning tools để scan vulnerabilities
+ * @param phase - Thông tin chi tiết của phase chứa scanners
+ */
 export default function ScannerDetails({ phase }: ScannerDetailsProps) {
+  // State quản lý việc mở/đóng dialog thêm scanner
   const [openDialog, setOpenDialog] = useState(false);
+  // Hook để xóa scanner khỏi phase
   const removeScannerMutation = useRemoveScannerFromPhaseMutation();
   
-  // Make sure each scanner has a proper ID property
+  // Đảm bảo mỗi scanner có ID hợp lệ để sử dụng trong DataGrid
   const phaseScanners = phase.scanners 
     ? phase.scanners.map((scanner, index) => {
-        // Ensure each scanner has a valid ID by checking for _id, id, or generating one
+        // Kiểm tra và tạo ID hợp lệ cho scanner (_id, id, hoặc generated)
         const scannerId = scanner._id?.toString() || 
                          (typeof scanner.id === 'string' || typeof scanner.id === 'number' ? scanner.id : null) || 
                          `scanner-${index}`;
@@ -41,6 +49,10 @@ export default function ScannerDetails({ phase }: ScannerDetailsProps) {
       })
     : [];
   
+  /**
+   * Hàm xử lý xóa scanner khỏi phase
+   * @param scannerId - ID của scanner cần xóa
+   */
   const handleRemoveScanner = (scannerId: string) => {
     removeScannerMutation.mutate({
       phaseId: phase._id,
@@ -48,6 +60,7 @@ export default function ScannerDetails({ phase }: ScannerDetailsProps) {
     });
   };
 
+  // Cấu hình các cột cho DataGrid hiển thị thông tin scanner
   const columns: GridColDef[] = [
     { field: "name", headerName: "Scanner Name", flex: 1 },
     { field: "createdBy", headerName: "Created By", flex: 1 },
@@ -69,7 +82,10 @@ export default function ScannerDetails({ phase }: ScannerDetailsProps) {
 
   return (
     <Card sx={{ width: "100%" }}>
+      {/* Header của card */}
       <CardHeader title="Scanning Tools" />
+      
+      {/* Nội dung chính */}
       <CardContent>
         {phaseScanners.length > 0 ? (
           <DataGrid
@@ -99,6 +115,8 @@ export default function ScannerDetails({ phase }: ScannerDetailsProps) {
           </Box>
         )}
       </CardContent>
+      
+      {/* Actions chứa nút thêm scanner */}
       <CardActions sx={{ justifyContent: "space-between", flexWrap: "wrap", px: 2, pb: 2 }}>
         <Button
           variant="contained"
@@ -110,7 +128,7 @@ export default function ScannerDetails({ phase }: ScannerDetailsProps) {
         </Button>
       </CardActions>
       
-      {/* Dialog for adding scanners */}
+      {/* Dialog để thêm scanner */}
       <AddScannerDialog 
         open={openDialog} 
         setOpen={setOpenDialog} 

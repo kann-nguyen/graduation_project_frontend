@@ -1,3 +1,4 @@
+
 import {
   Add,
   Delete,
@@ -10,6 +11,7 @@ import {
   LibraryBooks,
   NavigateNext
 } from "@mui/icons-material";
+
 import {
   Box,
   Button,
@@ -33,35 +35,55 @@ import CreateArtifactDialog from "~/components/dialogs/CreateArtifactDialog";
 import { Phase } from "~/hooks/fetching/phase";
 import { useRemoveArtifactFromPhaseMutation } from "~/hooks/fetching/phase/query";
 import { useSearchParams } from "react-router-dom";
-import { Docker } from "~/icons/Icons";
+import { Docker } from "~/components/layout-components/Icons";
 
 interface ArtifactDetailsProps {
   phase: Phase;
 }
 
+/**
+ * Component hiển thị chi tiết artifacts trong phase
+ * Bao gồm danh sách artifacts, thông tin vulnerability/threat, và các thao tác quản lý
+ * @param phase - Thông tin chi tiết của phase chứa artifacts
+ */
 export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
+  // Hooks để điều hướng và lấy params
   const navigate = useNavigate();
   const { currentProject } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const artifactId = searchParams.get("artifactId") ?? "";
+  
+  // State quản lý các dialog
   const [openArtCreateDialog, setOpenArtCreateDialog] = useState(false);
   const [confirmModal, setConfirmModal] = useState(false);
   const [selectedArtifactId, setSelectedArtifactId] = useState<string>("");
+  
+  // Theme để lấy màu sắc
   const theme = useTheme();
   
+  // Hook để xóa artifact khỏi phase
   const removeArtifactMutation = useRemoveArtifactFromPhaseMutation();
 
+  /**
+   * Hàm điều hướng đến trang chi tiết artifact
+   * @param id - ID của artifact cần xem chi tiết
+   */
   function handleViewArtifact(id: string) {
     // Navigate to the new ArtifactDetail page with the artifact ID
     const projectPath = encodeURIComponent(currentProject || '');
     navigate(`/${projectPath}/artifact/${id}`);
   }
   
+  /**
+   * Hàm xử lý khi user muốn xóa artifact
+   * @param id - ID của artifact cần xóa
+   */
   function handleDeleteArtifact(id: string) {
     setSelectedArtifactId(id);
     setConfirmModal(true);
   }
 
+  /**
+   * Hàm thực hiện xóa artifact sau khi user xác nhận
+   */
   async function removeArtifact() {
     if (selectedArtifactId) {
       removeArtifactMutation.mutate({
@@ -71,7 +93,11 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
     }
   }
   
-  // Helper function to get the icon for each artifact type
+  /**
+   * Hàm trả về icon tương ứng với loại artifact
+   * @param type - Loại artifact (image, log, source code, executable, library)
+   * @returns JSX Element icon
+   */
   const getArtifactTypeIcon = (type: string) => {
     switch (type) {
       case 'image':
@@ -89,7 +115,11 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
     }
   };
   
-  // Get the color for each artifact type
+  /**
+   * Hàm trả về màu sắc tương ứng với loại artifact
+   * @param type - Loại artifact
+   * @returns Màu từ theme palette
+   */
   const getArtifactTypeColor = (type: string) => {
     switch (type) {
       case 'image':
@@ -109,6 +139,7 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
 
   return (
     <Card sx={{ width: "100%" }}>
+      {/* Header với title và nút thêm artifact */}
       <CardHeader 
         title={
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -124,6 +155,8 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
           </Box>
         } 
       />
+      
+      {/* Nội dung chính hiển thị danh sách artifacts */}
       <CardContent
         sx={{
           minHeight: {
@@ -137,6 +170,7 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
           <Grid container spacing={2}>
             {phase.artifacts.map((item) => (
               <Grid item xs={12} sm={6} md={4} key={item._id}>
+                {/* Card cho mỗi artifact với hover effect */}
                 <Card 
                   sx={{ 
                     height: '100%',
@@ -152,7 +186,9 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
                     cursor: 'pointer'
                   }}
                   onClick={() => handleViewArtifact(item._id)}
-                >                  {item.isScanning && (
+                >
+                  {/* Badge hiển thị trạng thái scanning */}
+                  {item.isScanning && (
                     <Box sx={{ 
                       position: 'absolute', 
                       top: 0, 
@@ -173,6 +209,7 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
                     </Box>
                   )}
                   
+                  {/* Badge hiển thị trạng thái invalid */}
                   {item.state === "invalid" && (
                     <Box sx={{ 
                       position: 'absolute', 
@@ -190,12 +227,13 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
                     </Box>
                   )}
                   
+                  {/* Nút xóa artifact */}
                   <Box sx={{ 
                     position: 'absolute', 
                     top: 8, 
                     right: 8,
                     zIndex: 10,
-                    // Adjust position when badges are present
+                    // Điều chỉnh vị trí khi có badge
                     ...(item.isScanning || item.state === "invalid") && {
                       top: item.isScanning && item.state === "invalid" ? 72 : 
                            item.isScanning || item.state === "invalid" ? 40 : 8
@@ -218,9 +256,12 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
                     </IconButton>
                   </Box>
                   
+                  {/* Nội dung chính của artifact card */}
                   <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    {/* Thông tin cơ bản: icon, tên, loại */}
                     <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        {/* Icon container với màu theo loại artifact */}
                         <Box 
                           sx={{ 
                             display: 'flex',
@@ -240,6 +281,7 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
                           <Typography variant="h6" noWrap sx={{ maxWidth: 150 }}>
                             {item.name}
                           </Typography>
+                          {/* Chip hiển thị loại artifact */}
                           <Chip 
                             label={item.type}
                             size="small"
@@ -253,6 +295,7 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
                       </Box>
                     </Box>
                     
+                    {/* Thông tin version nếu có */}
                     <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
                       {item.version && (
                         <Tooltip title="Version">
@@ -265,6 +308,7 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
                       )}
                     </Box>
                     
+                    {/* Thông tin thống kê vulnerabilities và threats */}
                     <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Box>
                         <Tooltip title="Vulnerabilities">
@@ -286,6 +330,7 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
                         </Tooltip>
                       </Box>
                       
+                      {/* Nút xem chi tiết */}
                       <Button
                         endIcon={<NavigateNext />}
                         size="small"
@@ -322,6 +367,8 @@ export default function ArtifactDetails({ phase }: ArtifactDetailsProps) {
           </Box>
         )}
       </CardContent>
+      
+      {/* Các dialog */}
       <CreateArtifactDialog
         open={openArtCreateDialog}
         setOpen={setOpenArtCreateDialog}

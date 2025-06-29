@@ -1,8 +1,7 @@
-// Core imports
+
 import { useNavigate } from "react-router-dom";
 import { useTheme, alpha, SxProps } from "@mui/material";
 
-// MUI Components
 import {
   Card,
   Box,
@@ -24,22 +23,24 @@ import {
   Stack,
 } from "@mui/material";
 
-// Icons
+// Import các icons từ Material-UI
 import {
   Timeline,
   Assignment,
-  TaskAlt,
   Article,
   Visibility,
   CheckCircle,
-  TrendingUp,
-  Info,
-  ArrowForward,
+  TrendingUp
 } from "@mui/icons-material";
 
-// Types
+// Import types
 import { Phase } from "~/hooks/fetching/phase";
 
+/**
+ * Component hiển thị bảng tổng quan các phases
+ * @param phases - Danh sách các phase của project
+ * @param sx - Style tùy chỉnh cho component
+ */
 export default function PhaseBoard({
   phases,
   sx,
@@ -50,12 +51,17 @@ export default function PhaseBoard({
   const navigate = useNavigate();
   const theme = useTheme();
   
+  /**
+   * Hàm điều hướng đến trang chi tiết phase
+   * @param phaseId - ID của phase cần xem chi tiết
+   */
   function visitDetails(phaseId: string) {
     return () => {
       navigate(`${phaseId}`);
     };
   }
   
+  // Tính toán các thống kê tổng quan
   const totalTasks = phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
   const totalArtifacts = phases.reduce((sum, phase) => sum + phase.artifacts.length, 0);
   const completedTasks = phases.reduce((sum, phase) => 
@@ -63,6 +69,11 @@ export default function PhaseBoard({
   );
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
   
+  /**
+   * Hàm lấy màu cho phase dựa trên index
+   * @param index - Vị trí của phase trong danh sách
+   * @returns Màu từ palette theme
+   */
   const getPhaseColor = (index: number) => {
     const colors = [
       theme.palette.primary.main,
@@ -75,6 +86,11 @@ export default function PhaseBoard({
     return colors[index % colors.length];
   };
 
+  /**
+   * Hàm tính phần trăm tiến độ hoàn thành của phase
+   * @param phase - Thông tin phase
+   * @returns Phần trăm hoàn thành (0-100)
+   */
   const getPhaseProgress = (phase: Phase) => {
     if (phase.tasks.length === 0) return 0;
     const completed = phase.tasks.filter(task => task.status === 'completed').length;
@@ -302,6 +318,7 @@ export default function PhaseBoard({
       <Divider sx={{ mx: 3, opacity: 0.6 }} />
       
       <CardContent sx={{ p: 0 }}>
+        // Không có phase nào thì hiển thị text tạo phase
         {phases.length === 0 ? (
           <Box sx={{ 
             textAlign: 'center', 
@@ -318,6 +335,7 @@ export default function PhaseBoard({
             </Typography>
           </Box>
         ) : (
+          // bảng danh sách phases
           <Table sx={{ '& .MuiTableCell-root': { borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}` } }}>            <TableHead>
               <TableRow sx={{ 
                 bgcolor: alpha(theme.palette.primary.main, 0.02),
@@ -354,6 +372,7 @@ export default function PhaseBoard({
                     }}
                     onClick={visitDetails(phase._id)}
                   >
+                    // Name, description
                     <TableCell sx={{ py: 3 }}>
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                         <Avatar 
@@ -389,6 +408,7 @@ export default function PhaseBoard({
                       </Box>
                     </TableCell>
                     
+                    // Hiển thị tiến độ
                     <TableCell align="center" sx={{ py: 3 }}>
                       <Box sx={{ minWidth: 80 }}>
                         <Typography variant="body2" fontWeight="medium" sx={{ mb: 1 }}>
@@ -410,6 +430,7 @@ export default function PhaseBoard({
                       </Box>
                     </TableCell>
                     
+                    // Hiển thị số lượng task
                     <TableCell align="center" sx={{ py: 3 }}>
                       <Tooltip title={`${phase.tasks.filter(t => t.status === 'completed').length} completed of ${phase.tasks.length} total`}>
                         <Chip
@@ -422,6 +443,7 @@ export default function PhaseBoard({
                       </Tooltip>
                     </TableCell>
                     
+                    // Hiển thị số lượng artifacts
                     <TableCell align="center" sx={{ py: 3 }}>
                       <Tooltip title="Project artifacts and deliverables">
                         <Chip
@@ -434,6 +456,7 @@ export default function PhaseBoard({
                       </Tooltip>
                     </TableCell>
                     
+                    // Nút xem chi tiết phase
                     <TableCell align="center" sx={{ py: 3 }}>
                       <Tooltip title="View phase details">
                         <Button

@@ -31,7 +31,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Artifact, Vulnerability } from "~/hooks/fetching/artifact";
 import { Threat } from "~/hooks/fetching/threat";
-import { Docker } from "~/icons/Icons";
+import { Docker } from "~/components/layout-components/Icons";
 import ThreatDetailsDialog from "../dialogs/ThreatDetailsDialog";
 interface VulnTabPanelProps {
   list: Vulnerability[];

@@ -46,8 +46,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { useUserByAccountIdQuery } from '~/hooks/fetching/user/query';
 import ProjectSelector from "~/components/layout-components/ProjectSelector";
 import ArtifactsSection from "~/components/layout-components/ArtifactsSection";
-import { useProjectWorkflowStatsQuery, useArtifactsByWorkflowStepQuery } from '~/hooks/fetching/workflow/query';
-import { WorkflowStats } from '~/hooks/fetching/workflow';
 
 // Extend dayjs with relative time
 dayjs.extend(relativeTime);
@@ -66,18 +64,7 @@ export default function ManagerHomePage() {
   const userQuery = useUserByAccountIdQuery();
   const user = userQuery.data?.data;
   
-  // Get workflow statistics
-  const { 
-    data: workflowStatsData, 
-    isLoading: isLoadingWorkflowStats 
-  } = useProjectWorkflowStatsQuery(currentProject || '');
-  const workflowStats: WorkflowStats | null | undefined = workflowStatsData?.data;
   
-  // Get artifacts in the current workflow step
-  const { 
-    data: artifactsInProgressData 
-  } = useArtifactsByWorkflowStepQuery(currentProject || '', undefined);
-
   // If data is not loaded yet
   if (!user) {
     return (

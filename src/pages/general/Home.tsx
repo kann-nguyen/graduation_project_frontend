@@ -1,8 +1,8 @@
 import { useUserRole } from "~/hooks/general";
-import MemberHomePage from "./MemberHomePage";
-import AdminHomePage from "./AdminHomePage";
-import ManagerHomePage from "./ManagerHomePage";
-import SecurityExpertHomePage from "./SecurityExpertHomePage";
+import MemberHomePage from "../member/MemberHomePage";
+import AdminHomePage from "../admin/AdminHomePage";
+import ManagerHomePage from "../member/ManagerHomePage";
+import SecurityExpertHomePage from "../member/SecurityExpertHomePage";
 
 export default function Home() {
   const role = useUserRole();

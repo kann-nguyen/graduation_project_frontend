@@ -84,7 +84,7 @@ import ThreatStatistics from "~/components/charts/ThreatStatisticsChart";
 import { useAccountContext } from '~/hooks/general';
 import { useUpdateArtifactRateScanMutation } from '~/hooks/fetching/artifact/query';
 import { Collapse } from "@mui/material";
-import WorkflowPanel from '~/components/workflow/WorkflowPanel';
+import WorkflowPanel from '~/components/cards/WorkflowPanel';
 
 dayjs.extend(relativeTime);
 
