@@ -1706,7 +1706,7 @@ function HorizontalWorkflowPanel({ workflowCycles }: { workflowCycles: WorkflowC
     { 
       label: "Detection", 
       icon: <BugReport />,
-      color: theme.palette.primary.main,
+      color: theme.palette.info.main,
       data: latestCycle.detection,
       metrics: latestCycle.detection ? [
         { label: "Vulnerabilities", value: latestCycle.detection.numberVuls || 0 }
@@ -1724,7 +1724,7 @@ function HorizontalWorkflowPanel({ workflowCycles }: { workflowCycles: WorkflowC
     { 
       label: "Assignment", 
       icon: <AssignmentIcon />,
-      color: theme.palette.secondary.main,
+      color: theme.palette.info.main,
       data: latestCycle.assignment,
       metrics: latestCycle.assignment ? [
         { label: "Assigned", value: latestCycle.assignment.numberTicketsAssigned || 0 },
@@ -1734,7 +1734,7 @@ function HorizontalWorkflowPanel({ workflowCycles }: { workflowCycles: WorkflowC
     { 
       label: "Remediation", 
       icon: <BuildIcon />,
-      color: theme.palette.warning.main,
+      color: theme.palette.info.main,
       data: latestCycle.remediation,
       metrics: latestCycle.remediation ? [
         { label: "Submitted", value: latestCycle.remediation.numberTicketsSubmitted || 0 },
@@ -1744,7 +1744,7 @@ function HorizontalWorkflowPanel({ workflowCycles }: { workflowCycles: WorkflowC
     { 
       label: "Verification", 
       icon: <VerifiedUser />,
-      color: theme.palette.success.main,
+      color: theme.palette.info.main,
       data: latestCycle.verification,
       metrics: latestCycle.verification ? [
         { label: "Resolved", value: latestCycle.verification.numberTicketsResolved || 0 },
@@ -1772,7 +1772,7 @@ function HorizontalWorkflowPanel({ workflowCycles }: { workflowCycles: WorkflowC
             <Chip 
               size="small" 
               label={latestCycle.completedAt ? 'Completed' : 'In Progress'}
-              color={latestCycle.completedAt ? 'success' : 'primary'}
+              color={latestCycle.completedAt ? 'success' : 'warning'}
             />
           </Box>
         </Grid>
